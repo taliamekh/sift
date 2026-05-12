@@ -41,6 +41,9 @@ route('/recipe', ({ query }) => {
 });
 
 route('/cookbook/:id', ({ params }) => renderView(() => CookbookView({ id: params.id })));
-route('/saved/:id', ({ params }) => renderView(() => SavedRecipeView({ id: params.id })));
+route('/saved/:id', ({ params, query }) => renderView(() => SavedRecipeView({
+  id: params.id,
+  fallbackUrl: query.get('fallback') || null,
+})));
 
 startRouter();

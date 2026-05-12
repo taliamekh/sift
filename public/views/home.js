@@ -221,8 +221,12 @@ function recipeCard(r) {
 
 function viewedCard(v) {
   // Recently-viewed entries come from localStorage. Saved ones link to their
-  // detail page; parsed ones replay the URL through the parser.
-  const card = h('button.recipe-card', { type: 'button' });
+  // detail page; parsed ones replay the URL through the parser. When the
+  // saved id no longer resolves on the server (e.g. another machine, or the
+  // recipe was deleted) we still pass the source URL along as ?fallback=,
+  // and SavedRecipeView replays it through the parser on 404 instead of
+  // dead-ending on a "Recipe not found" page.
+  const card = h('div.recipe-card.recipe-card-clickable', { tabindex: '0', role: 'button', 'aria-label': v.title });
   const imgWrap = h('div.recipe-card-image');
   if (v.heroImage) {
     imgWrap.appendChild(h('img', { src: v.heroImage, alt: v.title, loading: 'lazy' }));
@@ -255,11 +259,36 @@ function viewedCard(v) {
     if (i > 0) metaRow.appendChild(h('span.dot', '·'));
     metaRow.appendChild(p);
   });
+  // "Original" link tucks into the bottom-right of the card. stopPropagation
+  // so clicking it opens the source in a new tab without also triggering
+  // the card's main navigation.
+  if (v.url) {
+    const ext = h('a.recipe-card-source', {
+      href: v.url,
+      target: '_blank',
+      rel: 'noopener noreferrer',
+      title: 'Open the original recipe page',
+      'aria-label': 'Open the original recipe page in a new tab',
+    });
+    ext.innerHTML = `${icon('external')}<span>Original</span>`;
+    ext.addEventListener('click', (e) => e.stopPropagation());
+    metaRow.appendChild(h('span.spacer'));
+    metaRow.appendChild(ext);
+  }
   content.appendChild(metaRow);
   card.appendChild(content);
-  card.addEventListener('click', () => {
-    if (v.kind === 'saved' && v.id != null) navigate(`/saved/${v.id}`);
-    else if (v.url) navigate('/recipe?' + new URLSearchParams({ url: v.url }));
+
+  const open = () => {
+    if (v.kind === 'saved' && v.id != null) {
+      const qs = v.url ? '?' + new URLSearchParams({ fallback: v.url }) : '';
+      navigate(`/saved/${v.id}${qs}`);
+    } else if (v.url) {
+      navigate('/recipe?' + new URLSearchParams({ url: v.url }));
+    }
+  };
+  card.addEventListener('click', open);
+  card.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); }
   });
   return card;
 }
