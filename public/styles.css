@@ -381,10 +381,14 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
   text-align: center;
 }
 .hero h1 {
-  max-width: 18ch;
+  max-width: 22ch;
   margin: 0 auto;
   font-style: italic;
   font-weight: 500;
+  /* User asked for the hero title bigger — bump above step-5 with a custom
+     clamp so it stays dramatic on widescreens without overflowing mobile. */
+  font-size: clamp(3rem, 2.4rem + 3vw, 5.4rem);
+  line-height: 1.05;
   background: linear-gradient(95deg, var(--berry) 0%, var(--pink-500) 45%, var(--pink-600) 100%);
   background-size: 200% auto;
   -webkit-background-clip: text;
@@ -456,7 +460,12 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
   gap: var(--s-4);
   margin: var(--s-7) 0 var(--s-5);
 }
-.section-head h2 { margin: var(--s-2) 0 0; }
+.section-head h2 {
+  margin: var(--s-2) 0 0;
+  color: var(--berry);
+  font-style: italic;
+  letter-spacing: -0.01em;
+}
 
 /* Cookbook grid */
 .cookbook-grid {

@@ -15,20 +15,16 @@ const SVG = (size) => Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" viewB
       <stop offset="0%" stop-color="#FFB1CC"/>
       <stop offset="100%" stop-color="#F06292"/>
     </linearGradient>
-    <filter id="soft" x="-10%" y="-10%" width="120%" height="120%">
-      <feGaussianBlur stdDeviation="0.6"/>
-    </filter>
   </defs>
   <rect width="128" height="128" rx="32" fill="url(#g)"/>
-  <!-- cupcake silhouette -->
-  <path d="M40 56h48l-6 30c-1 5-5 8-10 8H56c-5 0-9-3-10-8z" fill="#FFF7F0" opacity="0.95"/>
-  <path d="M38 56c0-12 11-22 26-22s26 10 26 22z" fill="white"/>
-  <!-- frosting swirl detail -->
-  <path d="M48 50c4-2 8 0 10-2s4-4 8-2 6 0 8-2 8 0 10 2" stroke="#FFB1CC" stroke-width="2.4" fill="none" stroke-linecap="round"/>
-  <!-- cherry -->
-  <circle cx="64" cy="28" r="5.5" fill="#FFFFFF"/>
-  <circle cx="64" cy="28" r="4" fill="#F06292"/>
-  <path d="M64 24c0-4 6-6 6-10" stroke="#7A5547" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <!-- chef hat body -->
+  <path d="M32 88 L96 88 L96 60 C 96 44 84 40 76 40 C 76 28 52 28 52 40 C 44 40 32 44 32 60 Z" fill="#FFF8F8"/>
+  <!-- hat band -->
+  <path d="M32 80 L96 80" stroke="#F8B4D9" stroke-width="3" stroke-linecap="round"/>
+  <!-- hat puffs -->
+  <ellipse cx="48" cy="52" rx="8.5" ry="7" fill="#FFF8F8" stroke="#F8B4D9" stroke-width="2.2"/>
+  <ellipse cx="80" cy="52" rx="8.5" ry="7" fill="#FFF8F8" stroke="#F8B4D9" stroke-width="2.2"/>
+  <ellipse cx="64" cy="40" rx="8.5" ry="7" fill="#FFF8F8" stroke="#F8B4D9" stroke-width="2.2"/>
 </svg>`);
 
 const sizes = [16, 32, 48, 64, 128];

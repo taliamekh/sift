@@ -13,9 +13,8 @@ export async function HomeView() {
   const hero = h('section.hero');
   hero.innerHTML += `<div class="hero-decor right">${icon('cupcake')}</div>`;
 
-  hero.appendChild(h('span.eyebrow', '✦ Skip the story, get to the recipe ✦'));
   const title = h('h1');
-  title.innerHTML = `Just the <em>Recipe</em>. Hold the Memoir.`;
+  title.innerHTML = `Skip the story, <em>get to the recipe</em>.`;
   hero.appendChild(title);
   hero.appendChild(h('p.lead', 'Paste any recipe URL. We sift through and hand you the ingredients, instructions, and ratings so you can get cooking straight away. Save anything worth keeping to a cookbook of your own.'));
 
@@ -58,7 +57,7 @@ export async function HomeView() {
   // way to add — no separate button in the section header).
   const cookbooksSection = h('section');
   const head = h('div.section-head');
-  head.appendChild(h('h2', 'Your cookbooks'));
+  head.appendChild(h('h2', 'Your Cookbooks'));
   cookbooksSection.appendChild(head);
 
   const grid = h('div.cookbook-grid');
@@ -67,7 +66,7 @@ export async function HomeView() {
 
   // Recent recipes
   const recentSection = h('section');
-  recentSection.appendChild(h('div.section-head', h('h2', 'Recently saved')));
+  recentSection.appendChild(h('div.section-head', h('h2', 'Recently Saved')));
   const recentGrid = h('div.recipe-grid');
   recentSection.appendChild(recentGrid);
   root.appendChild(recentSection);

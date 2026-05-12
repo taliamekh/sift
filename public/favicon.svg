@@ -6,8 +6,10 @@
     </linearGradient>
   </defs>
   <rect width="64" height="64" rx="16" fill="url(#g)"/>
-  <path d="M22 18h20l-3 12H25z" fill="white" opacity="0.95"/>
-  <path d="M22 18c0-5 4-8 10-8s10 3 10 8" stroke="white" stroke-width="2.4" fill="none" stroke-linecap="round"/>
-  <circle cx="32" cy="9" r="2" fill="white"/>
-  <path d="M22 32h20l-2 14H24z" fill="white"/>
+  <!-- Chef hat -->
+  <path d="M16 44 L48 44 L48 30 C 48 22 42 20 38 20 C 38 14 26 14 26 20 C 22 20 16 22 16 30 Z" fill="#FFF8F8"/>
+  <line x1="17" y1="40" x2="47" y2="40" stroke="#F8B4D9" stroke-width="1.6" stroke-linecap="round"/>
+  <ellipse cx="24" cy="26" rx="4.2" ry="3.6" fill="#FFF8F8" stroke="#F8B4D9" stroke-width="1.2"/>
+  <ellipse cx="40" cy="26" rx="4.2" ry="3.6" fill="#FFF8F8" stroke="#F8B4D9" stroke-width="1.2"/>
+  <ellipse cx="32" cy="20" rx="4.2" ry="3.6" fill="#FFF8F8" stroke="#F8B4D9" stroke-width="1.2"/>
 </svg>
