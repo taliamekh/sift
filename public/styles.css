@@ -642,24 +642,24 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
   font-weight: 600;
   font-style: italic;
   letter-spacing: -0.01em;
-  /* Italic Fraunces ascenders + the dot of italic i sit well above
-     cap-height, and `overflow: hidden` (required by -webkit-line-clamp)
-     was shearing them off the top of the title box. A generous 0.4em
-     padding-top moves the text down inside the padding-box so the clip
-     edge sits above the highest accent mark instead of biting into it,
-     and a roomy 1.45 line-height gives the line itself extra vertical
-     breathing room. */
-  line-height: 1.45;
+  /* No `overflow: hidden` and no `-webkit-line-clamp`. Italic Fraunces
+     glyphs extend past their typographic bounding box in two directions:
+     the dot of italic *i* and ascenders on *k* / *l* / *b* sit above the
+     cap-height, and italic terminals at the end of every letter lean
+     past the right edge of the glyph box. Any clip on this element
+     shears one or the other (or both). Letting the title flow without a
+     clip means the italic dots, swashes, and trailing terminals all
+     render in full. Long titles wrap naturally onto extra lines and
+     the label panel grows; the icon area below uses flex so it shrinks
+     gracefully to compensate. */
+  line-height: 1.35;
   margin: 0;
-  padding: 0.4em 0 0.1em;
+  padding: 0.25em 0.2em 0.1em;
   text-align: center;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
   color: var(--cover-text, white);
   word-break: break-word;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  hyphens: auto;
 }
 .cookbook-cover-desc {
   font-size: 11.5px;
