@@ -2072,11 +2072,26 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
   }
   .rating-text { font-size: 9pt !important; }
   .rating-count { font-size: 7pt !important; }
+  /* Source URL is rendered as a real <a href> in the markup, so Chrome's
+     "Save as PDF" preserves it as a clickable link annotation. Give it an
+     obvious link affordance (berry colour, underline, visible external
+     icon) so the reader knows it's tappable in the PDF instead of looking
+     like greyed-out metadata. */
   .source-link {
-    font-size: 7.5pt !important;
-    color: #555 !important;
+    font-size: 8pt !important;
+    color: #B23A6D !important;
+    text-decoration: underline !important;
+    text-underline-offset: 1.5pt;
+    text-decoration-thickness: 0.4pt;
   }
-  .source-link svg { display: none !important; }
+  .source-link svg {
+    display: inline-block !important;
+    width: 7.5pt !important;
+    height: 7.5pt !important;
+    color: #B23A6D !important;
+    margin-right: 1.5pt;
+    vertical-align: -0.5pt;
+  }
 
   /* Servings stepper is hidden entirely in print (it's in the display:none
      list at the top of @media print). The scaled MAKES value already shows
