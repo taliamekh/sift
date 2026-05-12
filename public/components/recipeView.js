@@ -55,7 +55,16 @@ export function RecipeView(recipe, opts = {}) {
   // can target it from the very first invocation (which fires synchronously
   // inside renderServingsControl to set the initial disabled/value state).
   const ingList = h('ul.ingredient-list');
-  const rerenderIngredients = () => renderIngredients(ingList, recipe.ingredients || [], state);
+  // The MAKES meta cell at the top of the page lives-updates whenever the
+  // user adjusts the multiplier — so the printed output reflects the
+  // actually-cooked batch, not just the recipe's nominal yield.
+  const makesValueEl = root.querySelector('.recipe-meta-makes .value');
+  const rerenderIngredients = () => {
+    renderIngredients(ingList, recipe.ingredients || [], state);
+    if (makesValueEl) {
+      makesValueEl.textContent = formatMakes(state.servings, recipe.yieldText, recipe.servings);
+    }
+  };
   card.appendChild(renderServingsControl(state, rerenderIngredients, recipe.yieldText));
   card.appendChild(h('h3.section-title', 'Ingredients'));
   card.appendChild(ingList);
@@ -129,7 +138,12 @@ function renderHeader(recipe, state, opts = {}) {
     items.push(metaItem('Bake', formatMinutes(recipe.cookMinutes)));
   }
   if (recipe.yieldText || recipe.servings) {
-    items.push(metaItem('Makes', recipe.yieldText || `${recipe.servings} servings`));
+    // Tagged with .recipe-meta-makes so the servings stepper can find this
+    // value element and update it live as the multiplier changes.
+    const block = h('div.recipe-meta-item.recipe-meta-makes');
+    block.appendChild(h('span.label', 'Makes'));
+    block.appendChild(h('span.value', formatMakes(state.servings, recipe.yieldText, recipe.servings)));
+    items.push(block);
   }
   if (recipe.rating?.value || recipe.externalRating) {
     const v = recipe.rating?.value ?? recipe.externalRating;
@@ -163,6 +177,23 @@ function metaItem(label, value) {
   block.appendChild(h('span.label', label));
   block.appendChild(h('span.value', value));
   return block;
+}
+
+// Format "Makes" with the *scaled* serving count. Splits the recipe's
+// yieldText into [number, unit] and swaps the number for the user's current
+// servings ("12 cupcakes" + 24 → "24 cupcakes"). If yieldText is just a
+// number or missing, falls back to "{servings}" or "{servings} servings".
+function formatMakes(currentServings, yieldText, originalServings) {
+  const n = currentServings || originalServings || 1;
+  if (yieldText) {
+    const m = String(yieldText).match(/^\s*\d+(?:[.,]\d+)?\s*(.*)$/);
+    if (m) {
+      const unit = m[1].trim();
+      return unit ? `${n} ${unit}` : String(n);
+    }
+    return String(yieldText);
+  }
+  return `${n} servings`;
 }
 
 function sourceLink(url) {

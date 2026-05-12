@@ -1801,14 +1801,30 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
   body::before, body::after { display: none !important; }
 
   /* ── strip every chrome surface ──────────────────────────────────── */
+  /* .servings-control is hidden entirely now — the scaled servings show in
+     the top MAKES meta cell, so there's no need for a duplicate "MAKES ×N"
+     row in the printout. */
   .topbar, .breadcrumb, .recipe-actions, .photo-upload, .photo-gallery,
   .modal-backdrop, .cookbook-tabs, .hero-decor, .hero-title-cupcake,
   .star-input, .notes-area, .hero-image,
-  .servings-control .stepper, .editable-title::after,
+  .servings-control, .editable-title::after,
   .recipe-card-tab, .proxy-note,
   .breadcrumb-icon, .breadcrumb-sep, .breadcrumb-current,
   .ingredient-check, .ing-note-arrow,
   .section-title::after, .instruction-section::before { display: none !important; }
+
+  /* Force list-style off in print. The global `ul, ol { list-style: none }`
+     reset usually handles this, but some print engines reinstate default
+     bullet/decimal markers on flex-display <li> items, which was rendering
+     as a stray "·" between every numbered instruction step. */
+  ol, ul, .instructions, .ingredient-list {
+    list-style: none !important;
+    list-style-type: none !important;
+    padding-left: 0 !important;
+    margin-left: 0 !important;
+  }
+  li, .instruction, .ingredient-item { list-style: none !important; }
+  li::marker, .instruction::marker, .ingredient-item::marker { content: "" !important; }
 
   .container { max-width: none !important; padding: 0 !important; margin: 0 !important; }
 
