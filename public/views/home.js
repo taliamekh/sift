@@ -9,10 +9,13 @@ import { StarRating } from '../components/starRating.js';
 export async function HomeView() {
   const root = h('div.container.stack-7');
 
-  // Hero
+  // Hero — multiple decorative icons floating, each on its own delay
   const hero = h('section.hero');
   hero.innerHTML += `<div class="hero-decor left">${icon('whisk')}</div>`;
   hero.innerHTML += `<div class="hero-decor right">${icon('cupcake')}</div>`;
+  hero.innerHTML += `<div class="hero-decor extra-top">${icon('sparkle')}</div>`;
+  hero.innerHTML += `<div class="hero-decor extra-bot">${icon('heart')}</div>`;
+  hero.innerHTML += `<div class="hero-decor extra-mid">${icon('flower')}</div>`;
 
   hero.appendChild(h('span.eyebrow', '✦ Skip the story, get to the recipe ✦'));
   const title = h('h1');
@@ -55,19 +58,14 @@ export async function HomeView() {
   hero.appendChild(pasteCard);
   root.appendChild(hero);
 
-  // Cookbooks
+  // Cookbooks (the dashed "+ New cookbook" tile in the grid is the only
+  // way to add — no separate button in the section header).
   const cookbooksSection = h('section');
   const head = h('div.section-head');
   head.appendChild(h('div',
     h('span.eyebrow', 'Your library'),
     h('h2', 'Cookbooks'),
   ));
-  const newBookBtn = h('button.btn.btn-soft', { type: 'button' });
-  newBookBtn.innerHTML = `${icon('plus')}<span>New cookbook</span>`;
-  newBookBtn.addEventListener('click', () => {
-    openCookbookEditor({ onSave: () => render() });
-  });
-  head.appendChild(newBookBtn);
   cookbooksSection.appendChild(head);
 
   const grid = h('div.cookbook-grid');
@@ -125,19 +123,27 @@ export async function HomeView() {
 }
 
 function cookbookCard(cb) {
-  const card = h('button.cookbook-card.card-interactive', { type: 'button' });
-  const cover = h('div.cookbook-cover');
-  cover.style.background = cb.coverColor || '#F8B4D9';
-  cover.innerHTML = icon(cb.coverIcon || 'cupcake');
-  card.appendChild(cover);
+  // A cookbook card *looks* like a physical book: spine on the left,
+  // colored cover with the icon and title, page stack peeking out on
+  // the right edge.
+  const card = h('button.cookbook-card', { type: 'button' });
+  card.style.setProperty('--cover', cb.coverColor || '#F8B4D9');
 
-  const info = h('div.cookbook-info');
-  info.appendChild(h('h3', cb.name));
-  if (cb.description) info.appendChild(h('p.muted', cb.description));
-  const meta = h('div.cookbook-meta');
+  const content = h('div.cookbook-cover-content');
+
+  const iconWrap = h('div.cookbook-cover-icon');
+  iconWrap.innerHTML = icon(cb.coverIcon || 'cupcake');
+  content.appendChild(iconWrap);
+
+  const titleBlock = h('div.cookbook-cover-titleBlock');
+  titleBlock.appendChild(h('h3.cookbook-cover-title', cb.name));
+  if (cb.description) titleBlock.appendChild(h('p.cookbook-cover-desc', cb.description));
+  const meta = h('div.cookbook-cover-meta');
   meta.innerHTML = `${icon('bookmark')}<span>${cb.recipeCount} recipe${cb.recipeCount === 1 ? '' : 's'}</span>`;
-  info.appendChild(meta);
-  card.appendChild(info);
+  titleBlock.appendChild(meta);
+  content.appendChild(titleBlock);
+
+  card.appendChild(content);
   card.addEventListener('click', () => navigate(`/cookbook/${cb.id}`));
   return card;
 }

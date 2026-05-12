@@ -46,6 +46,13 @@ export async function SavedRecipeView({ id }) {
   const view = RecipeView(recipe, {
     headerActions: buildHeaderActions(recipe),
     sideContent,
+    editableTitle: true,
+    onTitleChange: async (newTitle) => {
+      try {
+        await api.updateRecipe(recipe.id, { title: newTitle });
+        toast.success('Title updated');
+      } catch (e) { toast.error(e.message); }
+    },
   });
   root.appendChild(view);
   return root;

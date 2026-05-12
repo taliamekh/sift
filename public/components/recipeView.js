@@ -21,7 +21,7 @@ export function RecipeView(recipe, opts = {}) {
   const left = h('div.recipe-left');
   root.appendChild(left);
 
-  const header = renderHeader(recipe, state);
+  const header = renderHeader(recipe, state, opts);
   left.appendChild(header);
 
   if (recipe.heroImage) {
@@ -70,7 +70,7 @@ export function RecipeView(recipe, opts = {}) {
   return root;
 }
 
-function renderHeader(recipe, state) {
+function renderHeader(recipe, state, opts = {}) {
   const header = h('header.recipe-header');
   if (recipe.parseSource === 'json-ld' || recipe.parseSource === 'microdata') {
     header.appendChild(h('span.eyebrow', '✦ Parsed cleanly ✦'));
@@ -82,7 +82,27 @@ function renderHeader(recipe, state) {
     header.appendChild(h('span.eyebrow', '✦ Recipe ✦'));
   }
 
-  header.appendChild(h('h1', recipe.title || 'Untitled recipe'));
+  if (opts.editableTitle) {
+    const titleEl = h('h1.editable-title', {
+      contentEditable: 'plaintext-only',
+      spellcheck: 'false',
+      title: 'Click to rename',
+    }, recipe.title || 'Untitled recipe');
+    const commit = () => {
+      const next = titleEl.textContent.trim();
+      if (!next || next === (recipe.title || '').trim()) return;
+      if (typeof opts.onTitleChange === 'function') opts.onTitleChange(next);
+      recipe.title = next;
+    };
+    titleEl.addEventListener('blur', commit);
+    titleEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); titleEl.blur(); }
+      if (e.key === 'Escape') { titleEl.textContent = recipe.title || ''; titleEl.blur(); }
+    });
+    header.appendChild(titleEl);
+  } else {
+    header.appendChild(h('h1', recipe.title || 'Untitled recipe'));
+  }
 
   // Description intentionally omitted — the recipe site's "intro paragraph"
   // is exactly the prose the user came here to skip.
@@ -240,6 +260,8 @@ function renderIngredients(host, ingredients, state) {
   const factor = state.scaleFactor != null ? state.scaleFactor : (state.servings / (state.originalServings || 1));
   ingredients.forEach((ing, idx) => {
     const parts = renderIngredientParts(ing, factor);
+    const { name, note } = splitOffNote(parts.name || ing.text || '');
+
     const item = h('li.ingredient-item', { tabindex: '0', role: 'checkbox', 'aria-checked': state.ingredientDone.has(idx) ? 'true' : 'false' });
     if (state.ingredientDone.has(idx)) item.classList.add('done');
 
@@ -258,7 +280,17 @@ function renderIngredients(host, ingredients, state) {
       text.appendChild(unitSpan);
       text.appendChild(document.createTextNode(' '));
     }
-    text.appendChild(document.createTextNode(parts.name || ing.text || ''));
+    text.appendChild(document.createTextNode(name));
+
+    if (note) {
+      const noteEl = h('span.ing-note');
+      const arrow = h('span.ing-note-arrow', { 'aria-hidden': 'true' });
+      arrow.innerHTML = icon('arrowRight');
+      noteEl.appendChild(arrow);
+      noteEl.appendChild(h('em', note));
+      text.appendChild(noteEl);
+    }
+
     item.appendChild(text);
 
     const toggle = () => {
@@ -314,6 +346,17 @@ function renderInstructions(host, instructions, state) {
     });
     host.appendChild(li);
   });
+}
+
+// Pulls a trailing parenthetical out of the ingredient name so we can render
+// it as a separate "note" line. Handles single and doubled parens which
+// recipe sites use interchangeably ("flour ((Note 1))", "flour (room temp)").
+// Refuses to split leading parens like "(8 oz) package".
+function splitOffNote(text) {
+  if (!text) return { name: '', note: null };
+  const m = text.match(/^(.+?)\s*\(+([^()]+)\)+\s*$/);
+  if (m && m[2].trim()) return { name: m[1].trim(), note: m[2].trim() };
+  return { name: text.trim(), note: null };
 }
 
 function escapeText(s) {

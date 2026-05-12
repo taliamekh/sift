@@ -356,6 +356,18 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
   font-size: var(--step-1);
   line-height: 1.6;
 }
+.hero h1 em {
+  background: linear-gradient(95deg, var(--pink-500) 0%, var(--berry) 60%, var(--pink-500) 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmerText 6s ease-in-out infinite;
+}
+@keyframes shimmerText {
+  0%, 100% { background-position: 0% center; }
+  50%      { background-position: 100% center; }
+}
 
 .paste-card {
   max-width: 720px;
@@ -374,10 +386,22 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
 .hero-decor {
   position: absolute;
   pointer-events: none;
-  opacity: 0.7;
+  opacity: 0.8;
+  color: var(--pink-300);
+  animation: float 6s ease-in-out infinite;
+  filter: drop-shadow(0 6px 12px rgba(187, 91, 130, 0.16));
 }
-.hero-decor.left  { top: 30px; left: 6%; transform: rotate(-14deg); width: 76px; }
-.hero-decor.right { bottom: 0; right: 5%; transform: rotate(12deg); width: 90px; }
+.hero-decor.left  { top: 24px; left: 5%; width: 84px; --rot: -14deg; }
+.hero-decor.right { bottom: 12px; right: 4%; width: 96px; --rot: 12deg; animation-delay: -2s; animation-duration: 7s; }
+.hero-decor.extra-top { top: 80px; right: 18%; width: 44px; --rot: 8deg; color: var(--pink-400); opacity: 0.6; animation-delay: -1.4s; animation-duration: 5s; }
+.hero-decor.extra-bot { bottom: 40px; left: 20%; width: 40px; --rot: -22deg; color: var(--berry); opacity: 0.55; animation-delay: -3.6s; animation-duration: 8s; }
+.hero-decor.extra-mid { top: 50%; left: 12%; width: 36px; --rot: 25deg; color: var(--gold); opacity: 0.5; animation-delay: -5s; animation-duration: 9s; }
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(var(--rot, 0deg)); }
+  50%      { transform: translateY(-10px) rotate(var(--rot, 0deg)); }
+}
+/* Each decor sets its own --rot via inline style so the animation can keep
+   the original tilt while only floating vertically. */
 
 @media (max-width: 720px) {
   .paste-card form { flex-direction: column; }
@@ -397,56 +421,167 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
 /* Cookbook grid */
 .cookbook-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: var(--s-5);
-}
-.cookbook-card {
-  background: var(--surface);
-  border-radius: var(--r-lg);
-  overflow: hidden;
-  text-align: left;
-  display: flex;
-  flex-direction: column;
-  cursor: pointer;
-  transition: transform var(--dur-base) var(--ease-snap), box-shadow var(--dur-base) var(--ease-soft);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow-sm);
-}
-.cookbook-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
-.cookbook-cover {
-  aspect-ratio: 4/3;
-  display: grid; place-items: center;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--s-6) var(--s-5);
+  padding-bottom: var(--s-5);  /* room for "shelf" line under */
   position: relative;
-  overflow: hidden;
 }
-.cookbook-cover::before {
+/* Subtle bookshelf line behind the grid */
+.cookbook-grid::after {
   content: "";
   position: absolute;
-  inset: 0;
-  background-image:
-    radial-gradient(circle at 20% 20%, rgba(255,255,255,0.4), transparent 40%),
-    radial-gradient(circle at 80% 70%, rgba(255,255,255,0.2), transparent 40%);
+  left: -8px; right: -8px; bottom: 0;
+  height: 4px;
+  background: linear-gradient(90deg, transparent, rgba(74, 44, 58, 0.16), rgba(74, 44, 58, 0.20), rgba(74, 44, 58, 0.16), transparent);
+  border-radius: 2px;
+  z-index: -1;
+  filter: blur(0.5px);
 }
-.cookbook-cover svg { width: 64px; height: 64px; color: white; opacity: 0.9; position: relative; z-index: 1; }
-.cookbook-info { padding: var(--s-4) var(--s-5) var(--s-5); }
-.cookbook-info h3 { margin-bottom: var(--s-1); }
-.cookbook-meta { display: flex; gap: var(--s-2); align-items: center; color: var(--text-muted); font-size: var(--step--1); }
+
+.cookbook-card {
+  aspect-ratio: 5 / 7;
+  background-color: var(--cover, #F8B4D9);
+  background-image:
+    /* subtle sheen + bottom-darken for legibility */
+    linear-gradient(180deg,
+      rgba(255, 255, 255, 0.22) 0%,
+      rgba(255, 255, 255, 0.05) 24%,
+      transparent 40%,
+      rgba(0, 0, 0, 0.10) 80%,
+      rgba(0, 0, 0, 0.22) 100%);
+  border-radius: 3px 10px 10px 3px;
+  border: none;
+  position: relative;
+  text-align: left;
+  cursor: pointer;
+  overflow: visible;
+  box-shadow:
+    /* spine inset darken */
+    inset 18px 0 14px -14px rgba(0, 0, 0, 0.20),
+    /* outer drop */
+    0 10px 22px -10px rgba(74, 44, 58, 0.30),
+    0 3px 6px rgba(74, 44, 58, 0.10);
+  transform-origin: bottom left;
+  transition: transform var(--dur-base) var(--ease-snap), box-shadow var(--dur-base);
+}
+.cookbook-card::before {
+  /* Dark spine band */
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 14px;
+  background-image:
+    linear-gradient(90deg, rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.30) 60%, rgba(0, 0, 0, 0.16));
+  border-radius: 3px 0 0 3px;
+  box-shadow: inset -1px 0 0 rgba(0, 0, 0, 0.20);
+}
+.cookbook-card::after {
+  /* Page stack peeking from the right edge */
+  content: "";
+  position: absolute;
+  right: -3px; top: 6px; bottom: 6px;
+  width: 4px;
+  background:
+    repeating-linear-gradient(180deg,
+      rgba(255, 255, 255, 0.95) 0 1.5px,
+      rgba(74, 44, 58, 0.10) 1.5px 2px,
+      rgba(255, 255, 255, 0.92) 2px 3.5px,
+      rgba(74, 44, 58, 0.10) 3.5px 4px);
+  border-radius: 0 4px 4px 0;
+  box-shadow: 1px 0 2px rgba(0, 0, 0, 0.06);
+}
+.cookbook-card:hover {
+  transform: translateY(-8px) rotate(-1.5deg);
+  box-shadow:
+    inset 18px 0 14px -14px rgba(0, 0, 0, 0.20),
+    0 18px 30px -12px rgba(74, 44, 58, 0.36),
+    0 6px 12px rgba(74, 44, 58, 0.14);
+}
+.cookbook-cover-content {
+  position: relative;
+  height: 100%;
+  padding: var(--s-4) var(--s-4) var(--s-5) calc(var(--s-4) + 18px);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  color: white;
+  gap: var(--s-3);
+}
+.cookbook-cover-icon {
+  display: grid; place-items: center;
+  width: 48px; height: 48px;
+  color: white;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.20));
+  opacity: 0.95;
+}
+.cookbook-cover-icon svg { width: 44px; height: 44px; }
+.cookbook-cover-titleBlock { display: flex; flex-direction: column; gap: var(--s-2); }
+.cookbook-cover-title {
+  font-family: 'Fraunces', serif;
+  font-size: var(--step-1);
+  font-weight: 600;
+  font-style: italic;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+  margin: 0;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+  color: white;
+  word-break: break-word;
+  /* truncate at 3 lines so very long titles don't blow out */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.cookbook-cover-desc {
+  font-size: 11.5px;
+  opacity: 0.92;
+  margin: 0;
+  font-weight: 500;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.15);
+}
+.cookbook-cover-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.95;
+}
+.cookbook-cover-meta svg { width: 12px; height: 12px; }
 
 .cookbook-new {
-  border: 2px dashed var(--border-strong);
+  aspect-ratio: 5 / 7;
   background: transparent;
+  background-image: linear-gradient(180deg, var(--pink-50), transparent);
+  border: 2px dashed var(--border-strong);
+  border-radius: 3px 10px 10px 3px;
   box-shadow: none;
   display: grid;
   place-items: center;
-  aspect-ratio: auto;
-  min-height: 230px;
   color: var(--cocoa-muted);
   font-weight: 600;
-  transition: border-color var(--dur-quick), color var(--dur-quick), background var(--dur-quick);
+  cursor: pointer;
+  transition: all var(--dur-base) var(--ease-snap);
 }
-.cookbook-new:hover { border-color: var(--pink-400); color: var(--berry); background: var(--pink-50); transform: none; }
-.cookbook-new-inner { display: flex; flex-direction: column; align-items: center; gap: var(--s-2); }
-.cookbook-new svg { width: 32px; height: 32px; }
+.cookbook-new:hover {
+  border-color: var(--pink-400);
+  color: var(--berry);
+  background-image: linear-gradient(180deg, var(--pink-100), var(--pink-50));
+  transform: translateY(-4px);
+}
+.cookbook-new-inner {
+  display: flex; flex-direction: column; align-items: center; gap: var(--s-2);
+  font-size: var(--step-0);
+}
+.cookbook-new svg { width: 36px; height: 36px; }
 
 /* ============================================================== */
 /* RECIPE VIEW ---------------------------------------------------- */
@@ -469,6 +604,28 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
   margin: 0;
   letter-spacing: -0.02em;
 }
+.editable-title {
+  cursor: text;
+  border-radius: 6px;
+  padding: 0 6px;
+  margin: 0 -6px !important;
+  transition: background var(--dur-quick), box-shadow var(--dur-quick);
+  outline: none;
+  position: relative;
+}
+.editable-title:hover {
+  background: var(--pink-50);
+}
+.editable-title:hover::after {
+  content: "✎";
+  position: absolute;
+  top: -8px; right: -22px;
+  font-size: 14px;
+  color: var(--pink-400);
+  font-style: normal;
+  pointer-events: none;
+}
+.editable-title:focus { background: var(--pink-50); box-shadow: var(--shadow-focus); }
 .recipe-header .description {
   margin-top: var(--s-4);
   font-size: var(--step-1);
@@ -576,15 +733,12 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
 }
 
 .ingredients-card {
-  position: sticky;
-  top: 84px;
   padding: var(--s-5) var(--s-5) var(--s-6);
   border-radius: var(--r-xl);
   background: linear-gradient(180deg, var(--pink-50), var(--paper));
   border: 1px solid var(--border);
   box-shadow: var(--shadow-md);
 }
-@media (max-width: 980px) { .ingredients-card { position: static; } }
 
 .servings-control {
   display: flex;
@@ -665,7 +819,10 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
   border-color: var(--pink-400);
 }
 .ingredient-item.done .ingredient-check svg { opacity: 1; transform: scale(1); }
-.ingredient-text { line-height: 1.5; transition: color var(--dur-quick), text-decoration-color var(--dur-quick); }
+.ingredient-text { line-height: 1.5; transition: color var(--dur-quick), text-decoration-color var(--dur-quick); display: flex; flex-direction: column; align-items: flex-start; }
+.ingredient-text > .qty,
+.ingredient-text > .unit,
+.ingredient-text > br { display: inline; }
 .ingredient-text .qty { font-weight: 700; color: var(--berry); font-variant-numeric: tabular-nums; }
 .ingredient-text .unit { color: var(--cocoa-muted); }
 .ingredient-item.done .ingredient-text {
@@ -674,6 +831,32 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
   text-decoration-thickness: 2px;
   color: var(--text-muted);
 }
+/* "Note 1", "(cake flour OK too)", etc. — pulled out of the ingredient name
+   so the main quantity is readable at a glance. */
+.ing-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  margin-top: 3px;
+  margin-left: 2px;
+  padding-left: 0;
+  font-size: 11.5px;
+  font-weight: 500;
+  font-style: italic;
+  color: var(--cocoa-muted);
+  line-height: 1.4;
+  text-decoration: none !important;
+}
+.ingredient-item.done .ing-note { opacity: 0.6; }
+.ing-note em { font-style: inherit; color: var(--cocoa-muted); }
+.ing-note-arrow {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--pink-300);
+}
+.ing-note-arrow svg { width: 12px; height: 12px; }
 
 /* Instructions */
 .instructions { display: flex; flex-direction: column; gap: var(--s-4); }
