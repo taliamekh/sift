@@ -7,10 +7,15 @@ import { HomeView } from './views/home.js';
 import { ParsedRecipeView } from './views/recipe.js';
 import { CookbookView } from './views/cookbook.js';
 import { SavedRecipeView } from './views/savedRecipe.js';
+import { renderBackgroundArt } from './components/backgroundArt.js';
 
 // Inject the brand mark SVG into the topbar
 const brandMark = $('.brand-mark');
 if (brandMark) brandMark.innerHTML = icon('whisk');
+
+// Inject the kitchen-doodle line-art layer once at startup; it lives behind
+// the main app forever via z-index, so views can render normally.
+document.body.appendChild(renderBackgroundArt());
 
 const app = $('#app');
 

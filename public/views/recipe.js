@@ -75,7 +75,7 @@ function loadingSkeleton() {
 function renderError(err, url) {
   const wrap = h('div.container-narrow', { style: { padding: 'var(--s-8) var(--s-6)' } });
   const empty = h('div.empty');
-  empty.appendChild(h('div.empty-illustration', { html: icon('flower') }));
+  empty.appendChild(h('div.empty-illustration', { html: icon('daisy') }));
   empty.appendChild(h('h3', 'We couldn’t reach this recipe'));
   empty.appendChild(h('p', err.message || 'Something went wrong while fetching this page.'));
   if (url) {

@@ -143,8 +143,39 @@ body::after {
   100% { transform: translate3d(18px, 12px, 0) scale(1.02); }
 }
 
+/* Hand-drawn line-art doodle layer — sits above the aurora + grain but
+   behind the main app. Each doodle slowly bobs so the page feels alive
+   without anything competing for attention. */
+.bg-art-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  overflow: hidden;
+}
+.bg-art {
+  position: absolute;
+  display: block;
+  color: var(--pink-300);
+  opacity: 0.18;
+  transform: rotate(var(--rot, 0deg));
+  animation: doodleFloat 10s ease-in-out infinite;
+  animation-delay: var(--delay, 0s);
+  filter: drop-shadow(0 2px 4px rgba(187, 91, 130, 0.10));
+}
+.bg-art svg { width: 100%; height: 100%; display: block; }
+@keyframes doodleFloat {
+  0%, 100% { transform: rotate(var(--rot, 0deg)) translateY(0); }
+  50%      { transform: rotate(var(--rot, 0deg)) translateY(-8px); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   body::before { animation: none; }
+  .bg-art { animation: none; }
+}
+@media (max-width: 720px) {
+  /* Hide the smaller doodles on mobile so they don't crowd the content */
+  .bg-art-layer { opacity: 0.5; }
 }
 
 h1, h2, h3, h4, h5 {
@@ -384,15 +415,18 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
   max-width: 18ch;
   margin: 0 auto;
   font-style: italic;
-  font-weight: 400;
-}
-.hero h1 em {
-  font-style: normal;
-  font-variation-settings: 'opsz' 144, 'SOFT' 100;
-  background: linear-gradient(90deg, var(--pink-500), var(--berry));
+  font-weight: 500;
+  background: linear-gradient(95deg, var(--berry) 0%, var(--pink-500) 45%, var(--pink-600) 100%);
+  background-size: 200% auto;
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+  animation: shimmerText 8s ease-in-out infinite;
+}
+.hero h1 em {
+  font-style: italic;
+  font-weight: 600;
+  font-variation-settings: 'opsz' 144, 'SOFT' 100;
 }
 .hero p.lead {
   max-width: 56ch;
@@ -400,14 +434,6 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
   color: var(--text-muted);
   font-size: var(--step-1);
   line-height: 1.6;
-}
-.hero h1 em {
-  background: linear-gradient(95deg, var(--pink-500) 0%, var(--berry) 60%, var(--pink-500) 100%);
-  background-size: 200% auto;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  animation: shimmerText 6s ease-in-out infinite;
 }
 @keyframes shimmerText {
   0%, 100% { background-position: 0% center; }
