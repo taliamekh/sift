@@ -18,7 +18,7 @@ const COOKBOOK_ICONS = [
   'croissant2', 'bread', 'baguette', 'iceCream', 'milkshake', 'candy',
   'lollipop', 'strawberry', 'apple',
   // savoury
-  'burger', 'chicken',
+  'burger', 'chicken', 'drumstick',
   // tools / kitchen
   'whisk', 'rollingPin', 'mixer', 'bowl', 'pot', 'oven', 'grill',
   'chefHat', 'knife', 'fork', 'spoon', 'mug', 'kettle', 'saltShaker',

@@ -9,6 +9,10 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ICON_DIR = resolve(__dirname, '..', 'extension', 'icons');
 mkdirSync(ICON_DIR, { recursive: true });
 
+// H-1 chef hat scaled into a 128×128 canvas (source 24×24 coords × 5.33,
+// translated by 4 horizontally). The continuous 3-hump wavy curve sits on
+// top of a rectangular band; both rendered in solid white over the pink
+// gradient panel.
 const SVG = (size) => Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="${size}" height="${size}">
   <defs>
     <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
@@ -17,14 +21,9 @@ const SVG = (size) => Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" viewB
     </linearGradient>
   </defs>
   <rect width="128" height="128" rx="32" fill="url(#g)"/>
-  <!-- chef hat body -->
-  <path d="M32 88 L96 88 L96 60 C 96 44 84 40 76 40 C 76 28 52 28 52 40 C 44 40 32 44 32 60 Z" fill="#FFF8F8"/>
-  <!-- hat band -->
-  <path d="M32 80 L96 80" stroke="#F8B4D9" stroke-width="3" stroke-linecap="round"/>
-  <!-- hat puffs -->
-  <ellipse cx="48" cy="52" rx="8.5" ry="7" fill="#FFF8F8" stroke="#F8B4D9" stroke-width="2.2"/>
-  <ellipse cx="80" cy="52" rx="8.5" ry="7" fill="#FFF8F8" stroke="#F8B4D9" stroke-width="2.2"/>
-  <ellipse cx="64" cy="40" rx="8.5" ry="7" fill="#FFF8F8" stroke="#F8B4D9" stroke-width="2.2"/>
+  <path d="M 32 76 C 27 55 32 28 42 24 C 50 12 56 24 56 40 C 56 24 66 12 76 12 C 86 12 86 24 86 40 C 86 24 96 12 102 24 C 112 28 107 55 102 76 Z" fill="#FFFFFF"/>
+  <rect x="32" y="76" width="70" height="18" fill="#FFFFFF"/>
+  <line x1="34" y1="76" x2="100" y2="76" stroke="#F8B4D9" stroke-width="2.4" stroke-linecap="round"/>
 </svg>`);
 
 const sizes = [16, 32, 48, 64, 128];

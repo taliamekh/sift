@@ -6,10 +6,9 @@
     </linearGradient>
   </defs>
   <rect width="64" height="64" rx="16" fill="url(#g)"/>
-  <!-- Chef hat -->
-  <path d="M16 44 L48 44 L48 30 C 48 22 42 20 38 20 C 38 14 26 14 26 20 C 22 20 16 22 16 30 Z" fill="#FFF8F8"/>
-  <line x1="17" y1="40" x2="47" y2="40" stroke="#F8B4D9" stroke-width="1.6" stroke-linecap="round"/>
-  <ellipse cx="24" cy="26" rx="4.2" ry="3.6" fill="#FFF8F8" stroke="#F8B4D9" stroke-width="1.2"/>
-  <ellipse cx="40" cy="26" rx="4.2" ry="3.6" fill="#FFF8F8" stroke="#F8B4D9" stroke-width="1.2"/>
-  <ellipse cx="32" cy="20" rx="4.2" ry="3.6" fill="#FFF8F8" stroke="#F8B4D9" stroke-width="1.2"/>
+  <!-- H-1 chef hat — 3-hump wavy curve, scaled into the 64×64 favicon canvas
+       (source path uses 24×24 coords, scaled by 2 and translated by 8). -->
+  <path d="M 18 36 C 16 28 18 18 22 16 C 25 12 28 16 28 22 C 28 16 32 12 36 12 C 40 12 40 16 40 22 C 40 16 43 12 46 16 C 50 18 48 28 46 36 Z" fill="#FFFFFF" fill-opacity="0.95"/>
+  <rect x="18" y="36" width="28" height="7" fill="#FFFFFF"/>
+  <line x1="19" y1="36" x2="45" y2="36" stroke="#F8B4D9" stroke-width="1.2" stroke-linecap="round"/>
 </svg>
