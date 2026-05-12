@@ -348,15 +348,52 @@ function renderInstructions(host, instructions, state) {
   });
 }
 
-// Pulls a trailing parenthetical out of the ingredient name so we can render
-// it as a separate "note" line. Handles single and doubled parens which
-// recipe sites use interchangeably ("flour ((Note 1))", "flour (room temp)").
-// Refuses to split leading parens like "(8 oz) package".
+// Pulls the trailing parenthetical out of the ingredient name and renders
+// it as a separate "note" line. Real-world quirks handled:
+//   - parens often nest ("X ((Y, Note 1))" or "X (Y (Note 1))") — we
+//     depth-count back from the closing paren to find its true match,
+//     then unwrap one extra layer of fully-wrapped parens
+//   - some sources prefix the note with stranded commas/slashes
+//     ("(, cut into cubes)") — strip those
+//   - broken-parser data from older saves may leave the name itself
+//     starting with "," or "/" — strip those too
 function splitOffNote(text) {
   if (!text) return { name: '', note: null };
-  const m = text.match(/^(.+?)\s*\(+([^()]+)\)+\s*$/);
-  if (m && m[2].trim()) return { name: m[1].trim(), note: m[2].trim() };
-  return { name: text.trim(), note: null };
+  let s = text.replace(/\s+/g, ' ').trim().replace(/^[,/]\s*/, '');
+  if (!s.endsWith(')')) return { name: s.trim(), note: null };
+
+  // Walk back from the final ')' to find its matching '('.
+  let depth = 1;
+  let i = s.length - 2;
+  for (; i >= 0; i--) {
+    if (s[i] === ')') depth++;
+    else if (s[i] === '(') {
+      depth--;
+      if (depth === 0) break;
+    }
+  }
+  if (i < 0 || depth !== 0) return { name: s.trim(), note: null };
+
+  // Content between the outer matching parens.
+  let noteContent = s.slice(i + 1, -1).trim();
+
+  // Unwrap one extra layer when the content itself is fully bracketed —
+  // covers the "((Note 1))" → "Note 1" case while leaving inline parens
+  // like "50g / 2oz each, Note 3" alone.
+  if (noteContent.startsWith('(') && noteContent.endsWith(')')) {
+    const inner = noteContent.slice(1, -1);
+    let d = 0, balanced = true;
+    for (const c of inner) {
+      if (c === '(') d++;
+      else if (c === ')') { d--; if (d < 0) { balanced = false; break; } }
+    }
+    if (balanced && d === 0) noteContent = inner.trim();
+  }
+
+  noteContent = noteContent.replace(/^[,\s/]+/, '').trim();
+  let prefix = s.slice(0, i).trim().replace(/[,\s]+$/, '');
+  if (!noteContent) return { name: s.trim(), note: null };
+  return { name: prefix, note: noteContent };
 }
 
 function escapeText(s) {

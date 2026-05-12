@@ -5,6 +5,7 @@ import Database from 'better-sqlite3';
 import { mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parseIngredient } from './parser/quantity.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const dbPath = resolve(__dirname, '..', 'data', 'sugarskip.db');
@@ -73,6 +74,36 @@ db.exec(`
   );
   CREATE INDEX IF NOT EXISTS photos_recipe_idx ON recipe_photos(recipe_id, position);
 `);
+
+// One-time migration — earlier versions of the ingredient parser regex
+// matched "3/4" as decimal-3 with a stranded "/4" in the rest, and "(8oz)"
+// brackets could leave a comma behind. Both signatures are detectable, so
+// we sweep every saved recipe on boot and re-parse any ingredient whose
+// `name` field starts with a "/" or "," — re-running the now-correct
+// parseIngredient on the original `text` produces clean data. Migration is
+// idempotent: after the first pass nothing matches the signature.
+(() => {
+  const rows = db.prepare('SELECT id, ingredients_json FROM recipes').all();
+  const update = db.prepare('UPDATE recipes SET ingredients_json = ?, updated_at = ? WHERE id = ?');
+  let fixed = 0;
+  for (const row of rows) {
+    let ingredients;
+    try { ingredients = JSON.parse(row.ingredients_json || '[]'); } catch { continue; }
+    if (!Array.isArray(ingredients) || !ingredients.length) continue;
+    const needsFix = ingredients.some(ing =>
+      typeof ing?.name === 'string' && /^[/,]/.test(ing.name) && typeof ing.text === 'string'
+    );
+    if (!needsFix) continue;
+    const reparsed = ingredients.map(ing => {
+      if (!ing?.text) return ing;
+      const fresh = parseIngredient(ing.text);
+      return fresh || ing;
+    });
+    update.run(JSON.stringify(reparsed), Date.now(), row.id);
+    fixed++;
+  }
+  if (fixed > 0) console.log(`[migration] re-parsed ingredients for ${fixed} recipe(s)`);
+})();
 
 // Seed a default cookbook on first run so the UI is never empty.
 const cookbookCount = db.prepare('SELECT COUNT(*) AS c FROM cookbooks').get().c;

@@ -143,39 +143,8 @@ body::after {
   100% { transform: translate3d(18px, 12px, 0) scale(1.02); }
 }
 
-/* Hand-drawn line-art doodle layer — sits above the aurora + grain but
-   behind the main app. Each doodle slowly bobs so the page feels alive
-   without anything competing for attention. */
-.bg-art-layer {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: -1;
-  overflow: hidden;
-}
-.bg-art {
-  position: absolute;
-  display: block;
-  color: var(--pink-300);
-  opacity: 0.18;
-  transform: rotate(var(--rot, 0deg));
-  animation: doodleFloat 10s ease-in-out infinite;
-  animation-delay: var(--delay, 0s);
-  filter: drop-shadow(0 2px 4px rgba(187, 91, 130, 0.10));
-}
-.bg-art svg { width: 100%; height: 100%; display: block; }
-@keyframes doodleFloat {
-  0%, 100% { transform: rotate(var(--rot, 0deg)) translateY(0); }
-  50%      { transform: rotate(var(--rot, 0deg)) translateY(-8px); }
-}
-
 @media (prefers-reduced-motion: reduce) {
   body::before { animation: none; }
-  .bg-art { animation: none; }
-}
-@media (max-width: 720px) {
-  /* Hide the smaller doodles on mobile so they don't crowd the content */
-  .bg-art-layer { opacity: 0.5; }
 }
 
 h1, h2, h3, h4, h5 {
