@@ -407,13 +407,13 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
   padding-bottom: 0.05em;
   color: var(--berry);  /* darker solid pink for the main phrase */
 }
+/* No em styling — the whole hero title reads uniform. The em element is
+   no longer rendered from home.js, this rule stays as a defensive default
+   in case any other view passes a string with <em> through the same h1. */
 .hero h1 em {
   font-style: italic;
-  font-weight: 700;
-  font-variation-settings: 'opsz' 144, 'SOFT' 100;
-  /* Deeper-pink em that lives in the same family as the berry main —
-     distinct without clashing. No underline; italic + weight is enough. */
-  color: var(--pink-600);
+  font-weight: inherit;
+  color: inherit;
 }
 .hero p.lead {
   max-width: 56ch;
@@ -446,29 +446,6 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
 .paste-card .input-icon .input { padding-left: 52px; }
 .paste-card .input-icon-glyph { left: 20px; width: 20px; height: 20px; }
 .paste-card .btn { padding-left: 1.6em; padding-right: 1.6em; }
-
-/* Title row puts the cupcake decoration inline with the h1, on its right,
-   so it reads as part of the title block rather than a corner accent. */
-.hero-title-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: clamp(var(--s-3), 2vw, var(--s-5));
-  flex-wrap: wrap;
-}
-.hero-title-cupcake {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: clamp(64px, 9vw, 110px);
-  height: clamp(64px, 9vw, 110px);
-  flex-shrink: 0;
-  color: var(--pink-400);
-  filter: drop-shadow(0 6px 14px rgba(187, 91, 130, 0.20));
-  animation: float 6s ease-in-out infinite;
-  --rot: 8deg;
-}
-.hero-title-cupcake svg { width: 100%; height: 100%; }
 
 /* Legacy floating decoration positions retained for any view that still
    declares .hero-decor children — the home page doesn't anymore. */
