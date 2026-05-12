@@ -586,14 +586,15 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
 .cookbook-cover-content {
   position: relative;
   height: 100%;
-  padding: var(--s-4) var(--s-4) var(--s-4) calc(var(--s-4) + 18px);
+  /* Symmetric horizontal padding (both sides clear the dark spine band) so
+     the label and icon centre on the *card*, not on the inner content
+     area. Previously the +18px spine offset only applied on the left, which
+     biased everything 9px to the right of true centre. */
+  padding: var(--s-4) calc(var(--s-4) + 18px) var(--s-4) calc(var(--s-4) + 18px);
   display: flex;
   flex-direction: column;
-  /* Label pinned to the top; icon claims the remaining vertical space and
-     centers itself within it. Old layout had the icon at the top and the
-     label at the bottom — flipped here so titles line up across every
-     cookbook regardless of how tall the description is. */
   justify-content: flex-start;
+  align-items: center;
   color: white;
   gap: var(--s-3);
 }
@@ -614,16 +615,23 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
 /* Rounded label panel that holds title + description + meta. Background
    inherits the cookbook's --cover color (set on the card element), so the
    editor's color picker controls this panel automatically. Sits on top of
-   any image cover so text stays readable. */
+   any image cover so text stays readable.
+   align-self: center + max-width:100% lets the panel shrink to the text
+   it actually contains — a "Cake" cookbook gets a tight little label, a
+   long-titled cookbook gets a wider one, never wider than the card. */
 .cookbook-label {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: var(--s-2);
   padding: var(--s-3) var(--s-4) calc(var(--s-3) + 2px);
   background: var(--cover, #F8B4D9);
   border-radius: 10px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.10);
   border: 1px solid rgba(255, 255, 255, 0.40);
+  align-self: center;
+  max-width: 100%;
+  text-align: center;
 }
 .cookbook-cover-title {
   font-family: 'Fraunces', serif;
@@ -633,6 +641,7 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
   letter-spacing: -0.01em;
   line-height: 1.15;
   margin: 0;
+  text-align: center;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
   color: white;
   word-break: break-word;
@@ -647,6 +656,7 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
   margin: 0;
   font-weight: 500;
   line-height: 1.4;
+  text-align: center;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -657,6 +667,7 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
 .cookbook-cover-meta {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   font-size: 11px;
   font-weight: 700;
