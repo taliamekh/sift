@@ -14,9 +14,11 @@ const COOKBOOK_COLORS = [
 
 const COOKBOOK_ICONS = [
   // sweets / baked goods
-  'cupcake', 'cookie', 'cake', 'donut', 'pie', 'croissant', 'croissant2',
-  'bread', 'baguette', 'iceCream', 'milkshake', 'candy', 'lollipop',
-  'strawberry', 'apple',
+  'cupcake', 'cookie', 'cake', 'donut', 'pie', 'pieSlice', 'croissant',
+  'croissant2', 'bread', 'baguette', 'iceCream', 'milkshake', 'candy',
+  'lollipop', 'strawberry', 'apple',
+  // savoury
+  'burger', 'chicken',
   // tools / kitchen
   'whisk', 'rollingPin', 'mixer', 'bowl', 'pot', 'oven', 'grill',
   'chefHat', 'knife', 'fork', 'spoon', 'mug', 'kettle', 'saltShaker',
@@ -24,8 +26,8 @@ const COOKBOOK_ICONS = [
   // botanical / decorative
   'heart', 'heartLine', 'daisy', 'rose', 'lily', 'tulip',
   'leaf', 'sparkle', 'starFour', 'starBurst', 'sun', 'moon', 'cloud',
-  // home / pets
-  'house', 'cat', 'dog',
+  // animals / home
+  'cow', 'cat', 'dog', 'house',
 ];
 
 const TAB_COLORS = [
