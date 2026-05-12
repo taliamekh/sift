@@ -21,9 +21,11 @@ const COOKBOOK_ICONS = [
   'whisk', 'rollingPin', 'mixer', 'bowl', 'pot', 'oven', 'grill',
   'chefHat', 'knife', 'fork', 'spoon', 'mug', 'kettle', 'saltShaker',
   'scale', 'herb',
-  // decorative
-  'heart', 'heartLine', 'daisy', 'rose', 'tulip', 'sparkle',
-  'starFour', 'starBurst', 'sun', 'moon', 'cloud',
+  // botanical / decorative
+  'heart', 'heartLine', 'daisy', 'rose', 'lily', 'tulip',
+  'leaf', 'sparkle', 'starFour', 'starBurst', 'sun', 'moon', 'cloud',
+  // home / pets
+  'house', 'cat', 'dog',
 ];
 
 const TAB_COLORS = [
