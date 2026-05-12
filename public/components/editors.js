@@ -68,7 +68,10 @@ export function openCookbookEditor({ cookbook = null, onSave }) {
   const previewIcon = h('span', { 'aria-hidden': 'true', style: { display: 'inline-flex' } });
   const refreshPreview = () => {
     previewIcon.innerHTML = icon(iconName);
-    previewIcon.style.color = textColor;
+    // The .cookbook-spine svg rule resolves its colour from --cover-text,
+    // so we set it on the preview box rather than relying on inherited
+    // span colour (which the more-specific rule would override).
+    previewBox.style.setProperty('--cover-text', textColor);
     if (coverImage) {
       previewBox.style.background = `center/cover no-repeat url(${JSON.stringify(coverImage)})`;
       previewBox.setAttribute('data-cover', 'image');
@@ -76,6 +79,12 @@ export function openCookbookEditor({ cookbook = null, onSave }) {
       previewBox.style.background = color;
       previewBox.removeAttribute('data-cover');
     }
+    // Propagate the live cover + text colour to the icon and text-colour
+    // picker tiles via CSS vars on the modal root, so each tile renders
+    // its glyph against the actual cookbook background the user is
+    // building — true preview rather than a generic pink swatch.
+    root.style.setProperty('--preview-cover', color);
+    root.style.setProperty('--preview-text', textColor);
   };
   previewBox.appendChild(previewIcon);
   preview.appendChild(previewBox);
@@ -169,32 +178,17 @@ export function openCookbookEditor({ cookbook = null, onSave }) {
   });
   root.appendChild(labelled('Cover color (when no image is selected)', swatchGrid));
 
-  // Icon picker — rendered on top of every cover (image or color). Drop
-  // shadow on the SVG keeps it legible on busy photos.
-  const iconGrid = h('div.icon-grid');
-  COOKBOOK_ICONS.forEach(n => {
-    const i = h('button.icon-pick', { type: 'button', 'aria-label': n });
-    i.innerHTML = icon(n);
-    if (n === iconName) i.classList.add('selected');
-    i.addEventListener('click', () => {
-      iconName = n;
-      $$('.icon-pick', iconGrid).forEach(b => b.classList.toggle('selected', b === i));
-      refreshPreview();
-    });
-    iconGrid.appendChild(i);
-  });
-  root.appendChild(labelled('Icon', iconGrid));
-
   // Text colour — applies to title, description, MAKES meta, and icon.
-  // Each chip shows the colour against the current label background so the
-  // user can preview contrast before committing.
+  // Each chip's background is the cookbook's currently selected cover
+  // colour (via --preview-cover), so the user sees the actual contrast
+  // before committing. Placed above the icon picker so the chosen text
+  // colour is also what tints the icon-picker tiles below.
   const textColorGrid = h('div.swatch-grid');
   COOKBOOK_TEXT_COLORS.forEach(({ value, label }) => {
     const s = h('button.swatch.swatch-text', {
       type: 'button',
       'aria-label': `Text colour ${label}`,
       title: label,
-      style: { background: 'var(--pink-50)', color: value },
     });
     s.innerHTML = `<span class="swatch-text-mark" style="color:${value}">Aa</span>`;
     if (value === textColor) s.classList.add('selected');
@@ -206,6 +200,23 @@ export function openCookbookEditor({ cookbook = null, onSave }) {
     textColorGrid.appendChild(s);
   });
   root.appendChild(labelled('Text & icon colour', textColorGrid));
+
+  // Icon picker — rendered on top of every cover (image or color). Tile
+  // background = --preview-cover, glyph = --preview-text, so each option
+  // shows what the icon will look like over the actual cookbook colour.
+  const iconGrid = h('div.icon-grid');
+  COOKBOOK_ICONS.forEach(n => {
+    const i = h('button.icon-pick.icon-pick-preview', { type: 'button', 'aria-label': n });
+    i.innerHTML = icon(n);
+    if (n === iconName) i.classList.add('selected');
+    i.addEventListener('click', () => {
+      iconName = n;
+      $$('.icon-pick', iconGrid).forEach(b => b.classList.toggle('selected', b === i));
+      refreshPreview();
+    });
+    iconGrid.appendChild(i);
+  });
+  root.appendChild(labelled('Icon', iconGrid));
 
   // Actions
   const actions = h('div.row');

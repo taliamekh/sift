@@ -620,9 +620,9 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
    inherits the cookbook's --cover color (set on the card element), so the
    editor's color picker controls this panel automatically. Sits on top of
    any image cover so text stays readable.
-   align-self: center + max-width:100% lets the panel shrink to the text
-   it actually contains — a "Cake" cookbook gets a tight little label, a
-   long-titled cookbook gets a wider one, never wider than the card. */
+   align-self: stretch makes the panel claim the full horizontal width of
+   the card's content area (a designated label band, like a school notebook
+   sticker), and the text inside stays centred via text-align: center. */
 .cookbook-label {
   display: flex;
   flex-direction: column;
@@ -633,8 +633,7 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
   border-radius: 10px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.10);
   border: 1px solid rgba(255, 255, 255, 0.40);
-  align-self: center;
-  max-width: 100%;
+  align-self: stretch;
   text-align: center;
 }
 .cookbook-cover-title {
@@ -1440,14 +1439,15 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
 .swatch:hover { transform: scale(1.1); }
 .swatch.selected { border-color: var(--cocoa); box-shadow: var(--shadow-focus); }
 
-/* Text-colour swatches sample the actual glyph rendering on a pale background,
-   so the user can judge legibility before saving the cookbook. */
+/* Text-colour swatches sample the actual glyph rendering against the
+   cookbook's currently chosen cover colour (via --preview-cover set on
+   the editor root), so the user judges contrast as it will really look. */
 .swatch-text {
   aspect-ratio: 1;
   border-radius: var(--r-md);
   border: 2px solid var(--border);
   display: grid; place-items: center;
-  background: var(--pink-50);
+  background: var(--preview-cover, var(--pink-50));
 }
 .swatch-text:hover { transform: scale(1.06); }
 .swatch-text.selected { border-color: var(--cocoa); box-shadow: var(--shadow-focus); }
@@ -1479,6 +1479,17 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
 .icon-pick svg { width: 26px; height: 26px; }
 .icon-pick:hover { background: var(--pink-100); }
 .icon-pick.selected { border-color: var(--pink-400); background: var(--pink-100); }
+
+/* Variant used inside the cookbook editor — each icon tile previews
+   against the cookbook's chosen cover colour and text colour, so the
+   user sees the icon as it will actually render on the card. */
+.icon-pick.icon-pick-preview {
+  background: var(--preview-cover, var(--pink-50));
+  color: var(--preview-text, var(--berry));
+}
+.icon-pick.icon-pick-preview svg { filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.18)); }
+.icon-pick.icon-pick-preview:hover { background: var(--preview-cover, var(--pink-100)); filter: brightness(0.95); }
+.icon-pick.icon-pick-preview.selected { border-color: var(--cocoa); box-shadow: var(--shadow-focus); background: var(--preview-cover, var(--pink-100)); }
 
 /* ============================================================== */
 /* TOAST ---------------------------------------------------------- */
