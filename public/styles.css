@@ -411,13 +411,9 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
   font-style: italic;
   font-weight: 700;
   font-variation-settings: 'opsz' 144, 'SOFT' 100;
-  color: var(--pink-500);  /* lighter/brighter pink so the em pops */
-  /* Subtle dotted underline to anchor it visually without competing */
-  text-decoration: underline;
-  text-decoration-color: rgba(240, 98, 146, 0.30);
-  text-decoration-style: dotted;
-  text-decoration-thickness: 1.5px;
-  text-underline-offset: 0.16em;
+  /* Deeper-pink em that lives in the same family as the berry main —
+     distinct without clashing. No underline; italic + weight is enough. */
+  color: var(--pink-600);
 }
 .hero p.lead {
   max-width: 56ch;
@@ -1240,20 +1236,32 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
   position: fixed; inset: 0;
   background: rgba(74, 44, 58, 0.4);
   backdrop-filter: blur(4px);
-  display: grid; place-items: center;
+  /* flex + overflow-y: auto so tall modals (e.g. the cookbook editor) scroll
+     the whole backdrop without clipping the action row at the bottom */
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
   z-index: 100;
-  padding: var(--s-4);
+  padding: var(--s-5) var(--s-4);
+  overflow-y: auto;
   animation: fadeIn var(--dur-base);
 }
 .modal {
   background: var(--surface);
   border-radius: var(--r-xl);
   padding: var(--s-6);
-  max-width: 540px;
+  max-width: 720px;
   width: 100%;
   box-shadow: var(--shadow-lg);
   animation: pop var(--dur-base) var(--ease-snap);
+  /* `margin: auto 0` pulls short modals to the vertical center; tall modals
+     overflow the backdrop and start at the top, which is what we want. */
+  margin: auto 0;
 }
+/* Soft scrollbar so the backdrop scroll doesn't feel intrusive */
+.modal-backdrop::-webkit-scrollbar { width: 10px; }
+.modal-backdrop::-webkit-scrollbar-thumb { background: var(--pink-200); border-radius: 5px; }
+.modal-backdrop::-webkit-scrollbar-track { background: transparent; }
 .modal h3 { margin-bottom: var(--s-4); }
 .modal .row { justify-content: flex-end; gap: var(--s-3); margin-top: var(--s-5); }
 
