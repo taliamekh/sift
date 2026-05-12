@@ -1798,16 +1798,16 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
 /* PRINT ---------------------------------------------------------- */
 /* ============================================================== */
 
-/* @page margin overrides the browser's default page margins, which is the
-   only reliable way to suppress the auto-injected URL/date footer that
-   most browsers add when printing. */
+/* @page margin overrides the browser default — the only reliable way to
+   suppress the auto-injected URL/date footer most browsers add. Tighter
+   margins than before to pack more recipe onto one page. */
 @page {
   size: letter;
-  margin: 0.5in 0.6in;
+  margin: 0.35in 0.45in;
 }
 
 @media print {
-  /* Reset: kill animations, shadows, decorative backgrounds */
+  /* ── reset all decorative stuff ──────────────────────────────────── */
   *, *::before, *::after {
     animation: none !important;
     transition: none !important;
@@ -1818,163 +1818,204 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
     background: white !important;
     color: #1d1418 !important;
     font-family: Georgia, 'Iowan Old Style', serif;
-    font-size: 10.5pt;
-    line-height: 1.42;
+    font-size: 9pt;
+    line-height: 1.32;
   }
   body::before, body::after { display: none !important; }
 
-  /* Strip all UI chrome */
+  /* ── strip every chrome surface ──────────────────────────────────── */
   .topbar, .breadcrumb, .recipe-actions, .photo-upload, .photo-gallery,
   .modal-backdrop, .cookbook-tabs, .hero-decor, .hero-title-cupcake,
-  .star-input, .notes-area,
+  .star-input, .notes-area, .hero-image,
   .servings-control .stepper, .editable-title::after,
-  .recipe-card-tab, .proxy-note { display: none !important; }
+  .recipe-card-tab, .proxy-note,
+  .breadcrumb-icon, .breadcrumb-sep, .breadcrumb-current,
+  .ingredient-check, .ing-note-arrow,
+  .section-title::after, .instruction-section::before { display: none !important; }
 
-  /* Container — use the page fully */
-  .container { max-width: none !important; padding: 0 !important; }
+  .container { max-width: none !important; padding: 0 !important; margin: 0 !important; }
 
-  /* Recipe layout — single column for clean flow */
-  .recipe-layout { display: block !important; gap: 0 !important; }
-  .recipe-left, .recipe-right { width: 100% !important; max-width: none !important; }
+  /* ── reorder: header → ingredients → instructions ────────────────── */
+  /* recipe-left and recipe-right are dissolved via display:contents so the
+     recipe-layout flex container can order their grandchildren directly. */
+  .recipe-layout {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0 !important;
+    align-items: stretch !important;
+  }
+  .recipe-left, .recipe-right { display: contents !important; }
+  .recipe-header        { order: 1; }
+  .ingredients-card     { order: 2; }
+  .recipe-instructions  { order: 3; }
+  .recipe-right > *:not(.ingredients-card) { display: none !important; }
 
-  /* Title block */
-  .recipe-header { margin: 0 0 10pt !important; }
+  /* ── title block ────────────────────────────────────────────────── */
+  .recipe-header { margin: 0 0 6pt !important; padding: 0 !important; }
   .recipe-header .eyebrow { display: none !important; }
   .recipe-header h1 {
-    font-size: 22pt !important;
+    font-size: 16pt !important;
     font-style: italic;
     font-weight: 600;
     color: #1d1418 !important;
-    margin: 0 0 4pt !important;
+    margin: 0 0 3pt !important;
     padding: 0 !important;
-    line-height: 1.15 !important;
+    line-height: 1.12 !important;
+    max-width: none !important;
     background: none !important;
     -webkit-text-fill-color: currentColor !important;
   }
   .recipe-header h1 em { color: #1d1418 !important; }
 
-  /* Compact meta strip */
+  /* ── meta strip: single thin line ───────────────────────────────── */
   .recipe-meta {
     background: white !important;
     border-radius: 0 !important;
     border: none !important;
-    border-bottom: 1px solid #aaa;
-    padding: 0 0 6pt !important;
-    gap: 18pt !important;
-    margin: 0 0 10pt !important;
+    border-top: 0.5pt solid #999;
+    border-bottom: 0.5pt solid #999;
+    padding: 3pt 0 !important;
+    column-gap: 14pt !important;
+    row-gap: 2pt !important;
+    margin: 0 0 6pt !important;
+    flex-wrap: wrap !important;
   }
-  .recipe-meta-item { gap: 1pt !important; }
-  .recipe-meta-item .label { font-size: 7pt !important; color: #666 !important; letter-spacing: 0.08em; }
-  .recipe-meta-item .value { font-size: 10pt !important; font-family: Georgia, serif !important; }
+  .recipe-meta-item { gap: 0 !important; }
+  .recipe-meta-item .label {
+    font-size: 6.5pt !important;
+    color: #777 !important;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+  }
+  .recipe-meta-item .value {
+    font-size: 9pt !important;
+    font-family: Georgia, serif !important;
+    line-height: 1.1 !important;
+  }
+  .rating-text { font-size: 9pt !important; }
+  .rating-count { font-size: 7pt !important; }
+  .source-link {
+    font-size: 7.5pt !important;
+    color: #555 !important;
+  }
+  .source-link svg { display: none !important; }
 
-  /* Drop the hero image entirely — saves a whole page on long recipes */
-  .hero-image { display: none !important; }
-
-  /* Servings shows as a static value (stepper hidden above) */
+  /* Servings — keep the multiplier label visible, hide the stepper */
   .servings-control {
     background: none !important;
     border: none !important;
     padding: 0 !important;
-    margin: 0 0 8pt !important;
+    margin: 0 0 4pt !important;
+    display: flex !important;
+    align-items: baseline !important;
+    gap: 6pt !important;
   }
+  .servings-control .label { font-size: 6.5pt !important; font-weight: 700; color: #777 !important; letter-spacing: 0.08em; }
   .servings-multiplier-badge {
     background: none !important;
     color: #1d1418 !important;
     padding: 0 !important;
     font-size: 9pt !important;
+    font-family: Georgia, serif !important;
+    font-weight: 600;
+    box-shadow: none !important;
+    transform: none !important;
   }
+  .servings-label-col { flex-direction: row !important; align-items: baseline !important; gap: 6pt !important; }
 
-  /* Section titles */
+  /* ── section titles ─────────────────────────────────────────────── */
   .section-title {
-    font-size: 13pt !important;
+    font-size: 10.5pt !important;
     font-style: italic;
+    font-weight: 600;
     color: #1d1418 !important;
-    margin: 8pt 0 4pt !important;
-    padding-bottom: 2pt !important;
-    border-bottom: 1.5pt solid #B23A6D;
+    margin: 6pt 0 3pt !important;
+    padding: 0 0 1pt 0 !important;
+    border-bottom: 1pt solid #B23A6D;
     page-break-after: avoid;
     break-after: avoid;
   }
-  .section-title::after { display: none !important; }
 
-  /* Ingredients — two columns to use the page width efficiently */
+  /* ── ingredients: two columns, very tight ───────────────────────── */
   .ingredients-card {
     background: white !important;
     border: none !important;
     padding: 0 !important;
-    margin: 0 0 10pt !important;
+    margin: 0 0 6pt !important;
   }
   .ingredient-list {
     column-count: 2;
-    column-gap: 22pt;
+    column-gap: 18pt;
     column-fill: balance;
   }
   .ingredient-item {
-    padding: 1pt 0 !important;
+    padding: 0.5pt 0 !important;
     margin: 0 !important;
     background: none !important;
     border: none !important;
     break-inside: avoid;
+    display: block !important;
   }
-  .ingredient-check { display: none !important; }
-  .ingredient-text { font-size: 9.5pt !important; line-height: 1.35 !important; }
+  .ingredient-text {
+    font-size: 8.5pt !important;
+    line-height: 1.28 !important;
+    display: block !important;
+  }
   .ingredient-text .qty { color: #B23A6D !important; font-weight: 700; }
   .ingredient-text .unit { color: #555 !important; }
-  .ing-note { font-size: 8.5pt !important; opacity: 0.75; margin-top: 1pt !important; }
-  .ing-note-arrow { display: none !important; }
-  .ing-note::before { content: "— "; color: #888; }
-  .ing-note em { color: #555 !important; }
+  .ing-note {
+    font-size: 7.5pt !important;
+    color: #666 !important;
+    margin-top: 0 !important;
+    display: inline !important;
+  }
+  .ing-note::before { content: " — "; color: #888; }
+  .ing-note em { color: #666 !important; font-style: italic; }
 
-  /* Instructions — flow steps tightly, never split a step across pages */
-  .recipe-instructions { margin-top: 4pt; }
-  .instructions { gap: 5pt !important; }
+  /* ── instructions: numbered list, tight ─────────────────────────── */
+  .recipe-instructions { margin-top: 2pt !important; }
+  .instructions { gap: 3pt !important; }
   .instruction-section {
-    font-size: 11pt !important;
+    font-size: 9pt !important;
     color: #B23A6D !important;
-    margin: 8pt 0 3pt !important;
+    margin: 5pt 0 2pt !important;
     padding: 0 !important;
     background: none !important;
+    font-weight: 600;
     page-break-after: avoid;
     break-after: avoid;
   }
-  .instruction-section::before { display: none !important; }
   .instruction {
     padding: 0 !important;
     border: none !important;
     background: none !important;
     align-items: baseline !important;
-    gap: 6pt !important;
+    gap: 5pt !important;
     page-break-inside: avoid;
     break-inside: avoid;
+    display: flex !important;
   }
   .instruction .step-num {
     background: none !important;
     color: #B23A6D !important;
     width: auto !important;
     height: auto !important;
+    min-width: 12pt !important;
     font-family: Georgia, serif !important;
-    font-size: 10pt !important;
+    font-size: 9pt !important;
     font-weight: 700;
     flex-shrink: 0;
+    text-align: right;
   }
   .instruction .step-num::after { content: "."; }
   .instruction .step-text {
-    font-size: 10pt !important;
+    font-size: 9pt !important;
     padding: 0 !important;
-    line-height: 1.42 !important;
+    line-height: 1.32 !important;
   }
 
-  /* Source link at the bottom — small, monochrome */
-  .source-link {
-    font-size: 8pt !important;
-    color: #777 !important;
-    display: inline-flex;
-    margin-top: 6pt;
-  }
-  .source-link svg { display: none !important; }
-
-  /* Cookbook view shouldn't bleed its book-shaped chrome onto a printout */
+  /* Cookbook view print — book chrome stripped */
   .cookbook-book { padding-right: 0 !important; }
-  .cookbook-page { box-shadow: none !important; border: 1px solid #ccc !important; background: white !important; }
+  .cookbook-page { box-shadow: none !important; border: 0.5pt solid #ccc !important; background: white !important; padding: 6pt !important; }
   .editable-title { background: none !important; }
 }
