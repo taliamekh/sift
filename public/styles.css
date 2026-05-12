@@ -1968,8 +1968,9 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
   .ing-note-arrow,
   .section-title::after, .instruction-section::before { display: none !important; }
 
-  /* Empty checkbox square next to each ingredient so the cook can tick
-     them off on the printed page. Show the box, hide its inner check svg. */
+  /* Empty checkbox square sits inline with each ingredient (left of the
+     text), so the cook can tick them off on the printed page. Show the
+     box, hide its inner check svg. */
   .ingredient-check {
     display: inline-block !important;
     width: 8.5pt !important;
@@ -1982,29 +1983,33 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
     vertical-align: top !important;
   }
   .ingredient-check svg { display: none !important; }
-  .ingredient-item {
-    display: flex !important;
-    align-items: flex-start !important;
-    padding: 1pt 0 !important;
-    margin: 0 !important;
-    background: none !important;
-    border: none !important;
-    break-inside: avoid;
-  }
   .ingredient-text { flex: 1 1 auto; min-width: 0; }
 
   /* Force list-style off in print. The global `ul, ol { list-style: none }`
      reset usually handles this, but some print engines reinstate default
      bullet/decimal markers on flex-display <li> items, which was rendering
-     as a stray "·" between every numbered instruction step. */
+     as a stray "·" between every numbered instruction step. content: none
+     (not "") is the form that fully omits the marker box. */
   ol, ul, .instructions, .ingredient-list {
     list-style: none !important;
     list-style-type: none !important;
+    list-style-image: none !important;
     padding-left: 0 !important;
     margin-left: 0 !important;
   }
-  li, .instruction, .ingredient-item { list-style: none !important; }
-  li::marker, .instruction::marker, .ingredient-item::marker { content: "" !important; }
+  li, .instruction, .ingredient-item {
+    list-style: none !important;
+    list-style-type: none !important;
+  }
+  li::marker, .instruction::marker, .ingredient-item::marker,
+  .instructions > li::marker, .ingredient-list > li::marker {
+    content: none !important;
+    display: none !important;
+  }
+  .instructions > li::before, .ingredient-list > li::before {
+    content: none !important;
+    display: none !important;
+  }
 
   .container { max-width: none !important; padding: 0 !important; margin: 0 !important; }
 
@@ -2073,28 +2078,9 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
   }
   .source-link svg { display: none !important; }
 
-  /* Servings — keep the multiplier label visible, hide the stepper */
-  .servings-control {
-    background: none !important;
-    border: none !important;
-    padding: 0 !important;
-    margin: 0 0 4pt !important;
-    display: flex !important;
-    align-items: baseline !important;
-    gap: 6pt !important;
-  }
-  .servings-control .label { font-size: 6.5pt !important; font-weight: 700; color: #777 !important; letter-spacing: 0.08em; }
-  .servings-multiplier-badge {
-    background: none !important;
-    color: #1d1418 !important;
-    padding: 0 !important;
-    font-size: 9pt !important;
-    font-family: Georgia, serif !important;
-    font-weight: 600;
-    box-shadow: none !important;
-    transform: none !important;
-  }
-  .servings-label-col { flex-direction: row !important; align-items: baseline !important; gap: 6pt !important; }
+  /* Servings stepper is hidden entirely in print (it's in the display:none
+     list at the top of @media print). The scaled MAKES value already shows
+     in the top meta strip, so a duplicate "MAKES ×N" row would be noise. */
 
   /* ── section titles ─────────────────────────────────────────────── */
   .section-title {
@@ -2122,17 +2108,22 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
     column-fill: balance;
   }
   .ingredient-item {
+    /* Flex keeps the checkbox sitting on the same line as the ingredient
+       text rather than stacking it above (which is what the cook expects
+       on a printed list — square, then quantity/name on one line). */
+    display: flex !important;
+    align-items: flex-start !important;
     padding: 0.5pt 0 !important;
     margin: 0 !important;
     background: none !important;
     border: none !important;
     break-inside: avoid;
-    display: block !important;
   }
   .ingredient-text {
     font-size: 8.5pt !important;
     line-height: 1.28 !important;
-    display: block !important;
+    display: inline !important;
+    flex: 1 1 auto;
   }
   .ingredient-text .qty { color: #B23A6D !important; font-weight: 700; }
   .ingredient-text .unit { color: #555 !important; }
@@ -2180,7 +2171,9 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
     flex-shrink: 0;
     text-align: right;
   }
-  .instruction .step-num::after { content: "."; }
+  /* No trailing period on the step number — combined with the empty ::marker
+     above this fully suppresses any stray "." or "·" between steps. */
+  .instruction .step-num::after { content: none !important; }
   .instruction .step-text {
     font-size: 9pt !important;
     padding: 0 !important;

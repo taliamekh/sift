@@ -36,20 +36,28 @@ const TAB_COLORS = [
   '#D4F0C2', '#B7DEC5', '#B8D8E8', '#D8C7E8',
 ];
 
-// Curated text colours for the cookbook label + icon. Three groupings,
+// Curated text colours for the cookbook label + icon. Four groupings,
 // each tuned to complement a family of COOKBOOK_COLORS:
-//   • lights (white/cream/blush) — read on rich pastels, photo covers,
-//     and the deep-pink #C2185B / #EC407A swatches
-//   • warm darks (rust/mustard/cocoa/berry) — sit naturally on the
-//     peach/cream/yellow row and warm pinks
-//   • cool darks (sage/forest/navy/plum/ink) — pair with the green,
-//     blue, lavender, and purple covers
-// Two rows of six in the editor.
+//   • lights — read on rich pastels, photo covers, and the deep-pink
+//     #C2185B / #EC407A swatches
+//   • cute mid-tones — saturated, playful, match the pastel-recipe-book
+//     vibe and read well on the lightest pastel covers
+//   • warm darks — sit naturally on the peach/cream/yellow row
+//   • cool darks / near-black — pair with the green/blue/lavender/purple
+//     covers and provide deep ink for any white-ish cover
+// Three rows of six in the editor.
 const COOKBOOK_TEXT_COLORS = [
   // Lights
   { value: '#FFFFFF', label: 'White' },
   { value: '#FFF4E6', label: 'Cream' },
   { value: '#FFE8F1', label: 'Blush' },
+  // Cute mid-tones (saturated, playful)
+  { value: '#F26CA7', label: 'Bubblegum' },
+  { value: '#FF7E7E', label: 'Coral' },
+  { value: '#F0B530', label: 'Sunny' },
+  { value: '#5FB48C', label: 'Mint' },
+  { value: '#5FB5DE', label: 'Sky' },
+  { value: '#A98BD8', label: 'Lavender' },
   // Warm darks
   { value: '#8C4A2E', label: 'Rust' },
   { value: '#8C6E2F', label: 'Mustard' },
