@@ -24,11 +24,16 @@ export function openModal(content, { onClose } = {}) {
 
 export function closeModal() {
   if (!activeBackdrop) return;
-  window.removeEventListener('keydown', activeBackdrop._onKey);
-  if (typeof activeBackdrop._onClose === 'function') activeBackdrop._onClose();
-  activeBackdrop.style.animation = 'none';
-  activeBackdrop.style.opacity = '0';
-  setTimeout(() => activeBackdrop?.remove(), 180);
+  // Capture the reference locally because we null `activeBackdrop` before
+  // the setTimeout fires — otherwise the timeout callback closes over the
+  // mutated (null) variable and the backdrop element never gets removed
+  // from the DOM, leaving an invisible overlay that swallows every click.
+  const backdrop = activeBackdrop;
   activeBackdrop = null;
+  window.removeEventListener('keydown', backdrop._onKey);
+  if (typeof backdrop._onClose === 'function') backdrop._onClose();
+  backdrop.style.animation = 'none';
+  backdrop.style.opacity = '0';
+  setTimeout(() => backdrop.remove(), 180);
   document.body.style.overflow = '';
 }

@@ -120,7 +120,8 @@ export async function CookbookView({ id }) {
       'aria-selected': state.activeTabId == null ? 'true' : 'false',
       style: { background: 'var(--pink-200)' },
     });
-    allTab.innerHTML = `<span class="ct-label">All</span><span class="ct-count">${state.recipes.length}</span>`;
+    const allDark = darken('#FFD0E3');
+    allTab.innerHTML = `<span class="ct-label" style="color:${allDark}">All</span><span class="ct-count" style="color:${allDark}">${state.recipes.length}</span>`;
     allTab.addEventListener('click', () => { state.activeTabId = null; render(); });
     tabsNav.appendChild(allTab);
 
@@ -131,8 +132,9 @@ export async function CookbookView({ id }) {
         'aria-selected': state.activeTabId === t.id ? 'true' : 'false',
         style: { background: t.color },
       });
-      const iconHtml = t.icon ? `<span class="ct-icon" style="color:${darken(t.color)}">${icon(t.icon)}</span>` : '';
-      tab.innerHTML = `${iconHtml}<span class="ct-label" style="color:${darken(t.color)}">${escapeText(t.name)}</span><span class="ct-count">${t.recipeCount}</span>`;
+      const dark = darken(t.color);
+      const iconHtml = t.icon ? `<span class="ct-icon" style="color:${dark}">${icon(t.icon)}</span>` : '';
+      tab.innerHTML = `${iconHtml}<span class="ct-label" style="color:${dark}">${escapeText(t.name)}</span><span class="ct-count" style="color:${dark}">${t.recipeCount}</span>`;
       tab.addEventListener('click', () => { state.activeTabId = t.id; render(); });
 
       // Edit affordance: a small pencil button that appears on hover/focus.
