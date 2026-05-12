@@ -589,18 +589,27 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
   padding: var(--s-4) var(--s-4) var(--s-4) calc(var(--s-4) + 18px);
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  /* Label pinned to the top; icon claims the remaining vertical space and
+     centers itself within it. Old layout had the icon at the top and the
+     label at the bottom — flipped here so titles line up across every
+     cookbook regardless of how tall the description is. */
+  justify-content: flex-start;
   color: white;
   gap: var(--s-3);
 }
 .cookbook-cover-icon {
-  display: grid; place-items: center;
-  width: 48px; height: 48px;
+  flex: 1;
+  display: grid;
+  place-items: center;
+  width: 100%;
   color: white;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.20));
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.22));
   opacity: 0.95;
 }
-.cookbook-cover-icon svg { width: 44px; height: 44px; }
+.cookbook-cover-icon svg {
+  width: clamp(70px, 56%, 130px);
+  height: clamp(70px, 56%, 130px);
+}
 
 /* Rounded label panel that holds title + description + meta. Background
    inherits the cookbook's --cover color (set on the card element), so the
@@ -685,6 +694,17 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
   white-space: nowrap;
   transition: transform var(--dur-quick) var(--ease-soft);
 }
+/* When a tab has an icon assigned (in the tab editor), the chip drops the
+   text name and renders the icon glyph instead — square-ish footprint, no
+   text overflow concerns. */
+.cookbook-card-tab-icon {
+  width: 28px;
+  height: 24px;
+  padding: 0 4px 0 2px;
+  display: grid;
+  place-items: center;
+}
+.cookbook-card-tab-icon svg { width: 16px; height: 16px; }
 .cookbook-card:hover .cookbook-card-tab { transform: translateX(2px); }
 .cookbook-card-tab-more {
   background: rgba(74, 44, 58, 0.55) !important;

@@ -125,13 +125,9 @@ function cookbookCard(cb) {
 
   const content = h('div.cookbook-cover-content');
 
-  const iconWrap = h('div.cookbook-cover-icon');
-  if (!cb.coverImage) iconWrap.innerHTML = icon(cb.coverIcon || 'cupcake');
-  content.appendChild(iconWrap);
-
-  // The title block lives in a rounded panel that uses the cover color as
-  // its background — keeps text readable on top of any image, and the
-  // cookbook editor's color picker controls this panel.
+  // Title label sits at the top of every cookbook (consistent across all
+  // books, whether they have an image cover or just a color). The cookbook
+  // editor's color picker controls this panel's background via --cover.
   const label = h('div.cookbook-label');
   label.appendChild(h('h3.cookbook-cover-title', cb.name));
   if (cb.description) label.appendChild(h('p.cookbook-cover-desc', cb.description));
@@ -140,18 +136,31 @@ function cookbookCard(cb) {
   label.appendChild(meta);
   content.appendChild(label);
 
+  // The icon fills the remaining vertical space below the label — bigger
+  // and visually centered, since the title is no longer competing for that
+  // area. Hidden when the cookbook has a custom image cover.
+  const iconWrap = h('div.cookbook-cover-icon');
+  if (!cb.coverImage) iconWrap.innerHTML = icon(cb.coverIcon || 'cupcake');
+  content.appendChild(iconWrap);
+
   card.appendChild(content);
 
   // Tabs sticking out the right edge of the book — small color chips
-  // showing each section name. Capped at 4 so a busy cookbook doesn't
-  // overflow into the neighbouring cell.
+  // showing each section. If the tab has an icon assigned in the tab
+  // editor we render that glyph; otherwise we fall back to the tab's text
+  // name. Capped at 4 so a busy cookbook doesn't overflow.
   if (Array.isArray(cb.tabs) && cb.tabs.length) {
     const tabsWrap = h('div.cookbook-card-tabs', { 'aria-hidden': 'true' });
     cb.tabs.slice(0, 4).forEach(t => {
-      const tab = h('span.cookbook-card-tab');
+      const tab = h('span.cookbook-card-tab', { title: t.name });
       tab.style.background = t.color;
       tab.style.color = darken(t.color);
-      tab.textContent = t.name;
+      if (t.icon) {
+        tab.classList.add('cookbook-card-tab-icon');
+        tab.innerHTML = icon(t.icon);
+      } else {
+        tab.textContent = t.name;
+      }
       tabsWrap.appendChild(tab);
     });
     if (cb.tabs.length > 4) {
