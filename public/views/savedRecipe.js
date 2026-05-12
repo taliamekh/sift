@@ -5,6 +5,7 @@ import { navigate } from '../lib/router.js';
 import { RecipeView } from '../components/recipeView.js';
 import { StarInput, StarRating } from '../components/starRating.js';
 import { Breadcrumb } from '../components/breadcrumb.js';
+import { addRecentlyViewed } from '../lib/recentlyViewed.js';
 import * as toast from '../lib/toast.js';
 
 export async function SavedRecipeView({ id }) {
@@ -24,6 +25,17 @@ export async function SavedRecipeView({ id }) {
       cookbook = book.cookbook;
       tabs = book.tabs;
     }
+    // Track this view so it surfaces on the home page even before a save
+    // (and a saved view replaces any parsed entry with the same source URL).
+    addRecentlyViewed({
+      kind: 'saved',
+      id: recipe.id,
+      url: recipe.sourceUrl,
+      title: recipe.title,
+      heroImage: recipe.heroImage,
+      totalMinutes: recipe.totalMinutes,
+      externalRating: recipe.externalRating,
+    });
   } catch (e) {
     root.appendChild(h('div.empty',
       h('div.empty-illustration', { html: icon('bowl') }),

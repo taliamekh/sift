@@ -5,6 +5,7 @@ import { RecipeView } from '../components/recipeView.js';
 import { Breadcrumb } from '../components/breadcrumb.js';
 import { openSaveRecipeFlow } from '../components/editors.js';
 import { navigate } from '../lib/router.js';
+import { addRecentlyViewed } from '../lib/recentlyViewed.js';
 import * as toast from '../lib/toast.js';
 
 // View shown after pasting a URL. Renders a loading state, calls /api/parse,
@@ -15,6 +16,16 @@ export async function ParsedRecipeView({ url }) {
 
   try {
     const { recipe } = await api.parseUrl(url);
+    // Track this view locally so the home page can surface it even when
+    // the user doesn't save the recipe.
+    addRecentlyViewed({
+      kind: 'parsed',
+      url: recipe.sourceUrl || url,
+      title: recipe.title,
+      heroImage: recipe.heroImage,
+      totalMinutes: recipe.totalMinutes,
+      externalRating: recipe.rating?.value,
+    });
     mount(root);
     root.appendChild(Breadcrumb([
       { label: 'Home', href: '#/', icon: 'home' },

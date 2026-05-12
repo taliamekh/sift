@@ -5,6 +5,7 @@ import { navigate } from '../lib/router.js';
 import { openCookbookEditor } from '../components/editors.js';
 import * as toast from '../lib/toast.js';
 import { StarRating } from '../components/starRating.js';
+import { getRecentlyViewed } from '../lib/recentlyViewed.js';
 
 export async function HomeView() {
   const root = h('div.container.stack-7');
@@ -68,9 +69,10 @@ export async function HomeView() {
   cookbooksSection.appendChild(grid);
   root.appendChild(cookbooksSection);
 
-  // Recent recipes
+  // Recent recipes — pulled from localStorage so URLs the user only
+  // viewed (didn't save) still show up here.
   const recentSection = h('section');
-  recentSection.appendChild(h('div.section-head', h('h2', 'Recently Saved')));
+  recentSection.appendChild(h('div.section-head', h('h2', 'Recently Viewed')));
   const recentGrid = h('div.recipe-grid');
   recentSection.appendChild(recentGrid);
   root.appendChild(recentSection);
@@ -91,22 +93,18 @@ export async function HomeView() {
       grid.appendChild(h('p.muted', 'Could not load cookbooks: ' + e.message));
     }
 
-    // Render recent recipes
+    // Render recently-viewed recipes from localStorage
     mount(recentGrid);
-    try {
-      const { recipes } = await api.listRecipes({ limit: 12 });
-      if (!recipes.length) {
-        const empty = h('div.empty');
-        empty.innerHTML = `<div class="empty-illustration">${icon('bookmark')}</div>
-          <h3>No saved recipes yet</h3>
-          <p>Paste a recipe URL above to get a clean reading view, then add it to a cookbook.</p>`;
-        recentGrid.appendChild(empty);
-        return;
-      }
-      recipes.forEach(r => recentGrid.appendChild(recipeCard(r)));
-    } catch (e) {
-      recentGrid.appendChild(h('p.muted', 'Could not load recipes: ' + e.message));
+    const viewed = getRecentlyViewed();
+    if (!viewed.length) {
+      const empty = h('div.empty');
+      empty.innerHTML = `<div class="empty-illustration">${icon('bookmark')}</div>
+        <h3>Nothing viewed yet</h3>
+        <p>Paste a recipe URL above. We'll keep a list here so you can come back to it whether you save it or not.</p>`;
+      recentGrid.appendChild(empty);
+      return;
     }
+    viewed.forEach(v => recentGrid.appendChild(viewedCard(v)));
   }
 
   await render();
@@ -176,6 +174,51 @@ function recipeCard(r) {
   content.appendChild(metaRow);
   card.appendChild(content);
   card.addEventListener('click', () => navigate(`/saved/${r.id}`));
+  return card;
+}
+
+function viewedCard(v) {
+  // Recently-viewed entries come from localStorage. Saved ones link to their
+  // detail page; parsed ones replay the URL through the parser.
+  const card = h('button.recipe-card', { type: 'button' });
+  const imgWrap = h('div.recipe-card-image');
+  if (v.heroImage) {
+    imgWrap.appendChild(h('img', { src: v.heroImage, alt: v.title, loading: 'lazy' }));
+  } else {
+    const ph = h('div.placeholder');
+    ph.innerHTML = icon('image');
+    imgWrap.appendChild(ph);
+  }
+  // Small badge in the corner so users can tell at a glance whether a card
+  // is in their cookbook or just a quick parse-and-go.
+  if (v.kind === 'saved') {
+    const badge = h('span.recipe-card-tab', { style: { background: 'var(--pink-400)' } }, 'Saved');
+    imgWrap.appendChild(badge);
+  }
+  card.appendChild(imgWrap);
+
+  const content = h('div.recipe-card-content');
+  content.appendChild(h('h4', v.title));
+  const metaRow = h('div.recipe-card-meta');
+  const parts = [];
+  if (v.totalMinutes) {
+    const span = h('span');
+    span.innerHTML = `${icon('clock')}<span style="margin-left:4px">${formatMinutes(v.totalMinutes)}</span>`;
+    parts.push(span);
+  }
+  if (v.externalRating) {
+    parts.push(StarRating(v.externalRating, null, { size: '0.95em' }));
+  }
+  parts.forEach((p, i) => {
+    if (i > 0) metaRow.appendChild(h('span.dot', '·'));
+    metaRow.appendChild(p);
+  });
+  content.appendChild(metaRow);
+  card.appendChild(content);
+  card.addEventListener('click', () => {
+    if (v.kind === 'saved' && v.id != null) navigate(`/saved/${v.id}`);
+    else if (v.url) navigate('/recipe?' + new URLSearchParams({ url: v.url }));
+  });
   return card;
 }
 

@@ -403,22 +403,25 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
   /* User asked for the hero title bigger — bump above step-5 with a custom
      clamp so it stays dramatic on widescreens without overflowing mobile. */
   font-size: clamp(3rem, 2.4rem + 3vw, 5.4rem);
-  line-height: 1.05;
-  background: linear-gradient(95deg, var(--berry) 0%, var(--pink-500) 45%, var(--pink-600) 100%);
-  background-size: 200% auto;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  animation: shimmerText 8s ease-in-out infinite;
+  line-height: 1.18;  /* descenders need air against the lead paragraph */
+  padding-bottom: 0.05em;
+  color: var(--berry);  /* darker solid pink for the main phrase */
 }
 .hero h1 em {
   font-style: italic;
-  font-weight: 600;
+  font-weight: 700;
   font-variation-settings: 'opsz' 144, 'SOFT' 100;
+  color: var(--pink-500);  /* lighter/brighter pink so the em pops */
+  /* Subtle dotted underline to anchor it visually without competing */
+  text-decoration: underline;
+  text-decoration-color: rgba(240, 98, 146, 0.30);
+  text-decoration-style: dotted;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 0.16em;
 }
 .hero p.lead {
   max-width: 56ch;
-  margin: var(--s-4) auto 0;
+  margin: var(--s-6) auto 0;  /* generous gap from the title's italic descenders */
   color: var(--text-muted);
   font-size: var(--step-1);
   line-height: 1.6;
