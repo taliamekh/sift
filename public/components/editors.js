@@ -176,7 +176,7 @@ export function openCookbookEditor({ cookbook = null, onSave }) {
     });
     swatchGrid.appendChild(s);
   });
-  root.appendChild(labelled('Cover color (when no image is selected)', swatchGrid));
+  root.appendChild(labelled('Notebook colour', swatchGrid));
 
   // Text colour — applies to title, description, MAKES meta, and icon.
   // Each chip's background is the cookbook's currently selected cover
