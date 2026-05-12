@@ -17,15 +17,16 @@ db.pragma('foreign_keys = ON');
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS cookbooks (
-    id            INTEGER PRIMARY KEY AUTOINCREMENT,
-    name          TEXT NOT NULL,
-    cover_color   TEXT NOT NULL DEFAULT '#F8B4D9',
-    cover_icon    TEXT NOT NULL DEFAULT 'cupcake',
-    cover_image   TEXT,
-    description   TEXT,
-    position      INTEGER NOT NULL DEFAULT 0,
-    created_at    INTEGER NOT NULL,
-    updated_at    INTEGER NOT NULL
+    id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    name              TEXT NOT NULL,
+    cover_color       TEXT NOT NULL DEFAULT '#F8B4D9',
+    cover_icon        TEXT NOT NULL DEFAULT 'cupcake',
+    cover_image       TEXT,
+    cover_text_color  TEXT NOT NULL DEFAULT '#FFFFFF',
+    description       TEXT,
+    position          INTEGER NOT NULL DEFAULT 0,
+    created_at        INTEGER NOT NULL,
+    updated_at        INTEGER NOT NULL
   );
 
   CREATE TABLE IF NOT EXISTS tabs (
@@ -76,14 +77,18 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS photos_recipe_idx ON recipe_photos(recipe_id, position);
 `);
 
-// One-time migration — older DBs didn't have cookbooks.cover_image. SQLite
+// One-time migrations for columns added after the initial schema. SQLite
 // ADD COLUMN is idempotent only if we check first, so we read pragma info
-// before issuing the ALTER.
+// before issuing each ALTER.
 (() => {
   const cols = db.prepare('PRAGMA table_info(cookbooks)').all().map(c => c.name);
   if (!cols.includes('cover_image')) {
     db.exec('ALTER TABLE cookbooks ADD COLUMN cover_image TEXT');
     console.log('[migration] added cookbooks.cover_image');
+  }
+  if (!cols.includes('cover_text_color')) {
+    db.exec(`ALTER TABLE cookbooks ADD COLUMN cover_text_color TEXT NOT NULL DEFAULT '#FFFFFF'`);
+    console.log('[migration] added cookbooks.cover_text_color');
   }
 })();
 

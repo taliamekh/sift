@@ -71,10 +71,14 @@ but viewing recipes works whether or not the server is running.
 
 ### Your cookbook
 
-* **Cookbooks** — make as many as you want; each gets its own color and
-  icon from a deep library of cooking iconography (whisk, pot, mixer,
-  rolling pin, knife, oven, kettle, mug, scale, herbs, cupcake, cake,
-  bread, cookie, donut, pie, croissant, salt shaker…).
+* **Cookbooks** — make as many as you want; each gets its own cover color
+  (or a full-bleed image cover from the preset gallery or your own
+  upload), an icon drawn from a deep library of cooking iconography
+  (whisk, pot, mixer, rolling pin, knife, oven, kettle, mug, scale,
+  herbs, cupcake, cake, bread, cookie, donut, pie, croissant, salt
+  shaker…), and a text/icon colour so dark-on-pastel and light-on-photo
+  looks both work. The icon overlays the photo when you've picked an
+  image cover.
 * **Book-style view** — cookbooks render as actual book pages with a
   visible spine and tabs sticking out the right edge like a recipe
   binder.

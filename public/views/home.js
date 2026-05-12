@@ -116,6 +116,7 @@ function cookbookCard(cb) {
   // right edge like binder dividers.
   const card = h('button.cookbook-card', { type: 'button' });
   card.style.setProperty('--cover', cb.coverColor || '#F8B4D9');
+  card.style.setProperty('--cover-text', cb.coverTextColor || '#FFFFFF');
   if (cb.coverImage) {
     card.setAttribute('data-cover', 'image');
     card.style.setProperty('--cover-image', `url(${JSON.stringify(cb.coverImage)})`);
@@ -136,11 +137,12 @@ function cookbookCard(cb) {
   label.appendChild(meta);
   content.appendChild(label);
 
-  // The icon fills the remaining vertical space below the label — bigger
-  // and visually centered, since the title is no longer competing for that
-  // area. Hidden when the cookbook has a custom image cover.
+  // The icon fills the remaining vertical space below the label. Renders on
+  // every cover — including image covers — so a photo of the user's bakes
+  // can still carry a category glyph. Drop-shadow keeps the icon legible
+  // against busy photos.
   const iconWrap = h('div.cookbook-cover-icon');
-  if (!cb.coverImage) iconWrap.innerHTML = icon(cb.coverIcon || 'cupcake');
+  iconWrap.innerHTML = icon(cb.coverIcon || 'cupcake');
   content.appendChild(iconWrap);
 
   card.appendChild(content);

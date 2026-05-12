@@ -36,6 +36,18 @@ const TAB_COLORS = [
   '#D4F0C2', '#B7DEC5', '#B8D8E8', '#D8C7E8',
 ];
 
+// Curated text colours for the cookbook label + icon. Whites/creams read on
+// rich pastels and photos; the dark options read on light pastels and let the
+// label feel printed-on rather than painted-on.
+const COOKBOOK_TEXT_COLORS = [
+  { value: '#FFFFFF', label: 'White' },
+  { value: '#FFF4E6', label: 'Cream' },
+  { value: '#FFE8F1', label: 'Blush' },
+  { value: '#4A2C3A', label: 'Cocoa' },
+  { value: '#7A1F47', label: 'Berry' },
+  { value: '#2A1E25', label: 'Ink' },
+];
+
 // ─── Cookbook editor ───────────────────────────────────────────────────────
 
 export function openCookbookEditor({ cookbook = null, onSave }) {
@@ -44,22 +56,25 @@ export function openCookbookEditor({ cookbook = null, onSave }) {
   let iconName = cookbook?.coverIcon || 'cupcake';
   let description = cookbook?.description || '';
   let coverImage = cookbook?.coverImage || null;
+  let textColor = cookbook?.coverTextColor || '#FFFFFF';
 
   const root = h('div.stack-5');
   root.appendChild(h('h3', cookbook ? 'Edit cookbook' : 'New cookbook'));
 
-  // Preview — when a cover image is set, it takes precedence over color/icon
+  // Preview — shows the icon over the image cover too, so users can pick a
+  // combo (image + icon + text colour) without saving first.
   const preview = h('div', { style: { display: 'grid', placeItems: 'center', marginBottom: 'var(--s-2)' } });
   const previewBox = h('div.cookbook-spine');
   const previewIcon = h('span', { 'aria-hidden': 'true', style: { display: 'inline-flex' } });
   const refreshPreview = () => {
+    previewIcon.innerHTML = icon(iconName);
+    previewIcon.style.color = textColor;
     if (coverImage) {
       previewBox.style.background = `center/cover no-repeat url(${JSON.stringify(coverImage)})`;
-      previewIcon.style.display = 'none';
+      previewBox.setAttribute('data-cover', 'image');
     } else {
       previewBox.style.background = color;
-      previewIcon.style.display = '';
-      previewIcon.innerHTML = icon(iconName);
+      previewBox.removeAttribute('data-cover');
     }
   };
   previewBox.appendChild(previewIcon);
@@ -154,7 +169,8 @@ export function openCookbookEditor({ cookbook = null, onSave }) {
   });
   root.appendChild(labelled('Cover color (when no image is selected)', swatchGrid));
 
-  // Icon picker
+  // Icon picker — rendered on top of every cover (image or color). Drop
+  // shadow on the SVG keeps it legible on busy photos.
   const iconGrid = h('div.icon-grid');
   COOKBOOK_ICONS.forEach(n => {
     const i = h('button.icon-pick', { type: 'button', 'aria-label': n });
@@ -167,7 +183,29 @@ export function openCookbookEditor({ cookbook = null, onSave }) {
     });
     iconGrid.appendChild(i);
   });
-  root.appendChild(labelled('Icon (when no image is selected)', iconGrid));
+  root.appendChild(labelled('Icon', iconGrid));
+
+  // Text colour — applies to title, description, MAKES meta, and icon.
+  // Each chip shows the colour against the current label background so the
+  // user can preview contrast before committing.
+  const textColorGrid = h('div.swatch-grid');
+  COOKBOOK_TEXT_COLORS.forEach(({ value, label }) => {
+    const s = h('button.swatch.swatch-text', {
+      type: 'button',
+      'aria-label': `Text colour ${label}`,
+      title: label,
+      style: { background: 'var(--pink-50)', color: value },
+    });
+    s.innerHTML = `<span class="swatch-text-mark" style="color:${value}">Aa</span>`;
+    if (value === textColor) s.classList.add('selected');
+    s.addEventListener('click', () => {
+      textColor = value;
+      $$('.swatch-text', textColorGrid).forEach(b => b.classList.toggle('selected', b === s));
+      refreshPreview();
+    });
+    textColorGrid.appendChild(s);
+  });
+  root.appendChild(labelled('Text & icon colour', textColorGrid));
 
   // Actions
   const actions = h('div.row');
@@ -198,6 +236,7 @@ export function openCookbookEditor({ cookbook = null, onSave }) {
         coverColor: color,
         coverIcon: iconName,
         coverImage,
+        coverTextColor: textColor,
         description: description.trim() || null,
       };
       const result = cookbook

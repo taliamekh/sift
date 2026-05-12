@@ -582,7 +582,11 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
   background-position: 0 0, center;
   background-repeat: no-repeat, no-repeat;
 }
-.cookbook-card[data-cover="image"] .cookbook-cover-icon { display: none; }
+/* Icon renders on top of every cover (image or color). On image covers it
+   sits over a slightly darker label-area gradient already baked into
+   .cookbook-card[data-cover="image"], plus the SVG's own drop-shadow,
+   which keeps it legible across busy photos and pastel colors alike. */
+.cookbook-card[data-cover="image"] .cookbook-cover-icon { opacity: 0.92; }
 .cookbook-cover-content {
   position: relative;
   height: 100%;
@@ -595,7 +599,7 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
   flex-direction: column;
   justify-content: flex-start;
   align-items: center;
-  color: white;
+  color: var(--cover-text, white);
   gap: var(--s-3);
 }
 .cookbook-cover-icon {
@@ -603,7 +607,7 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
   display: grid;
   place-items: center;
   width: 100%;
-  color: white;
+  color: var(--cover-text, white);
   filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.22));
   opacity: 0.95;
 }
@@ -643,7 +647,7 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
   margin: 0;
   text-align: center;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
-  color: white;
+  color: var(--cover-text, white);
   word-break: break-word;
   display: -webkit-box;
   -webkit-line-clamp: 3;
@@ -662,7 +666,7 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.10);
-  color: white;
+  color: var(--cover-text, white);
 }
 .cookbook-cover-meta {
   display: flex;
@@ -674,7 +678,7 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
   text-transform: uppercase;
   letter-spacing: 0.06em;
   opacity: 0.95;
-  color: white;
+  color: var(--cover-text, white);
 }
 .cookbook-cover-meta svg { width: 12px; height: 12px; }
 
@@ -1114,7 +1118,11 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
   box-shadow: var(--shadow-md);
   position: relative;
 }
-.cookbook-spine svg { width: 54px; height: 54px; color: white; }
+.cookbook-spine svg {
+  width: 54px; height: 54px;
+  color: var(--cover-text, white);
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.30));
+}
 .cookbook-spine[data-cover="image"] { background-size: cover; background-position: center; }
 .cookbook-spine[data-cover="image"]::after { display: none; }
 .cookbook-spine::after {
@@ -1431,6 +1439,26 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
 }
 .swatch:hover { transform: scale(1.1); }
 .swatch.selected { border-color: var(--cocoa); box-shadow: var(--shadow-focus); }
+
+/* Text-colour swatches sample the actual glyph rendering on a pale background,
+   so the user can judge legibility before saving the cookbook. */
+.swatch-text {
+  aspect-ratio: 1;
+  border-radius: var(--r-md);
+  border: 2px solid var(--border);
+  display: grid; place-items: center;
+  background: var(--pink-50);
+}
+.swatch-text:hover { transform: scale(1.06); }
+.swatch-text.selected { border-color: var(--cocoa); box-shadow: var(--shadow-focus); }
+.swatch-text-mark {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-weight: 600;
+  font-size: 1.15rem;
+  line-height: 1;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.08);
+}
 
 /* Icon picker */
 .icon-grid {

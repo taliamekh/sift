@@ -46,13 +46,16 @@ export async function CookbookView({ id }) {
     // Header
     const header = h('header.cookbook-header');
     const spine = h('div.cookbook-spine');
+    spine.style.setProperty('--cover-text', state.cookbook.coverTextColor || '#FFFFFF');
     if (state.cookbook.coverImage) {
       spine.style.background = `center/cover no-repeat url(${JSON.stringify(state.cookbook.coverImage)})`;
       spine.setAttribute('data-cover', 'image');
     } else {
       spine.style.background = state.cookbook.coverColor || '#F8B4D9';
-      spine.innerHTML = icon(state.cookbook.coverIcon || 'cupcake');
     }
+    // Icon renders on every spine — even image-backed ones — so the user's
+    // chosen category glyph is consistent between the home card and detail.
+    spine.innerHTML = icon(state.cookbook.coverIcon || 'cupcake');
     header.appendChild(spine);
 
     const info = h('div.flex-1');
