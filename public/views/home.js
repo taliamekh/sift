@@ -29,7 +29,11 @@ export async function HomeView() {
   });
 
   const inputWrap = h('div.input-icon.flex-1');
-  inputWrap.innerHTML = icon('link');
+  // Glyph in an explicitly-sized span — relying on CSS width on a raw <svg>
+  // without a width attribute is unreliable; wrapping fixes it.
+  const glyph = h('span.input-icon-glyph', { 'aria-hidden': 'true' });
+  glyph.innerHTML = icon('link');
+  inputWrap.appendChild(glyph);
   const input = h('input.input', {
     type: 'url',
     name: 'url',

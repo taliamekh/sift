@@ -326,7 +326,22 @@ textarea.input { resize: vertical; min-height: 6em; }
 .input-icon {
   position: relative;
 }
-.input-icon svg {
+.input-icon-glyph {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--cocoa-muted);
+  pointer-events: none;
+}
+.input-icon-glyph svg { width: 100%; height: 100%; display: block; }
+/* Legacy selector kept for any future use that puts a bare <svg> here */
+.input-icon > svg {
   position: absolute;
   left: 14px;
   top: 50%;
@@ -425,6 +440,12 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
 }
 .paste-card form { display: flex; gap: var(--s-3); }
 .paste-card .input { font-size: var(--step-1); padding: 0.85em 1.1em; flex: 1; }
+/* Override .paste-card .input's shorthand padding when the input lives
+   inside .input-icon, so the leading link glyph doesn't overlap the
+   placeholder text. Selector is more specific than .paste-card .input
+   alone, so it wins regardless of source order. */
+.paste-card .input-icon .input { padding-left: 52px; }
+.paste-card .input-icon-glyph { left: 20px; width: 20px; height: 20px; }
 .paste-card .btn { padding-left: 1.6em; padding-right: 1.6em; }
 
 .hero-decor {
