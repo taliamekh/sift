@@ -35,6 +35,7 @@ function cookbookRow(row) {
     coverColor: row.cover_color,
     coverIcon: row.cover_icon,
     coverImage: row.cover_image,
+    coverTextColor: row.cover_text_color || '#FFFFFF',
     description: row.description,
     position: row.position,
     createdAt: row.created_at,
@@ -79,20 +80,21 @@ router.get('/cookbooks', (req, res) => {
 });
 
 router.post('/cookbooks', (req, res) => {
-  const { name, coverColor, coverIcon, coverImage, description } = req.body || {};
+  const { name, coverColor, coverIcon, coverImage, coverTextColor, description } = req.body || {};
   if (!name || typeof name !== 'string' || !name.trim()) {
     return res.status(400).json({ error: 'Cookbook name is required.' });
   }
   const now = Date.now();
   const maxPos = db.prepare('SELECT COALESCE(MAX(position), -1) AS m FROM cookbooks').get().m;
   const info = db.prepare(`
-    INSERT INTO cookbooks (name, cover_color, cover_icon, cover_image, description, position, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO cookbooks (name, cover_color, cover_icon, cover_image, cover_text_color, description, position, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     name.trim(),
     coverColor || '#F8B4D9',
     coverIcon || 'cupcake',
     coverImage || null,
+    coverTextColor || '#FFFFFF',
     description || null,
     maxPos + 1,
     now,
@@ -106,7 +108,7 @@ router.patch('/cookbooks/:id', (req, res) => {
   const id = Number(req.params.id);
   const existing = db.prepare('SELECT * FROM cookbooks WHERE id = ?').get(id);
   if (!existing) return res.status(404).json({ error: 'Cookbook not found.' });
-  const { name, coverColor, coverIcon, coverImage, description, position } = req.body || {};
+  const { name, coverColor, coverIcon, coverImage, coverTextColor, description, position } = req.body || {};
   const now = Date.now();
   // coverImage is special: a literal `null` clears it; `undefined` leaves it.
   const nextCoverImage = coverImage === undefined ? existing.cover_image : coverImage;
@@ -116,6 +118,7 @@ router.patch('/cookbooks/:id', (req, res) => {
         cover_color = COALESCE(?, cover_color),
         cover_icon = COALESCE(?, cover_icon),
         cover_image = ?,
+        cover_text_color = COALESCE(?, cover_text_color),
         description = COALESCE(?, description),
         position = COALESCE(?, position),
         updated_at = ?
@@ -125,6 +128,7 @@ router.patch('/cookbooks/:id', (req, res) => {
     coverColor ?? null,
     coverIcon ?? null,
     nextCoverImage,
+    coverTextColor ?? null,
     description ?? null,
     position ?? null,
     now,

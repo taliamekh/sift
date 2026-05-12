@@ -5,10 +5,10 @@ import { navigate } from '../lib/router.js';
 import { RecipeView } from '../components/recipeView.js';
 import { StarInput, StarRating } from '../components/starRating.js';
 import { Breadcrumb } from '../components/breadcrumb.js';
-import { addRecentlyViewed } from '../lib/recentlyViewed.js';
+import { addRecentlyViewed, removeRecentlyViewed } from '../lib/recentlyViewed.js';
 import * as toast from '../lib/toast.js';
 
-export async function SavedRecipeView({ id }) {
+export async function SavedRecipeView({ id, fallbackUrl = null }) {
   const root = h('div.container');
 
   let recipe = null;
@@ -37,6 +37,17 @@ export async function SavedRecipeView({ id }) {
       externalRating: recipe.externalRating,
     });
   } catch (e) {
+    // Stale recently-viewed entries (recipe deleted, or pointing at IDs from
+    // a different machine) used to dead-end on a "Recipe not found" screen.
+    // When the caller passed a fallback source URL (the recently-viewed card
+    // attaches one), prune the bad entry and replay the URL through the
+    // parser so the user lands on the actual recipe instead of a dead end.
+    if (fallbackUrl) {
+      const numericId = Number(id);
+      removeRecentlyViewed(it => it.kind === 'saved' && it.id === numericId);
+      navigate('/recipe?' + new URLSearchParams({ url: fallbackUrl }), { replace: true });
+      return root;
+    }
     root.appendChild(h('div.empty',
       h('div.empty-illustration', { html: icon('bowl') }),
       h('h3', 'Recipe not found'),

@@ -8,6 +8,7 @@
   "scripts": {
     "start": "node server/index.js",
     "dev": "node --watch server/index.js",
+    "test": "node scripts/test-parser.js",
     "gen-icons": "node scripts/gen-icons.js",
     "setup": "npm install && npm run gen-icons"
   },

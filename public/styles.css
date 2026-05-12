@@ -582,7 +582,11 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
   background-position: 0 0, center;
   background-repeat: no-repeat, no-repeat;
 }
-.cookbook-card[data-cover="image"] .cookbook-cover-icon { display: none; }
+/* Icon renders on top of every cover (image or color). On image covers it
+   sits over a slightly darker label-area gradient already baked into
+   .cookbook-card[data-cover="image"], plus the SVG's own drop-shadow,
+   which keeps it legible across busy photos and pastel colors alike. */
+.cookbook-card[data-cover="image"] .cookbook-cover-icon { opacity: 0.92; }
 .cookbook-cover-content {
   position: relative;
   height: 100%;
@@ -595,7 +599,7 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
   flex-direction: column;
   justify-content: flex-start;
   align-items: center;
-  color: white;
+  color: var(--cover-text, white);
   gap: var(--s-3);
 }
 .cookbook-cover-icon {
@@ -603,7 +607,7 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
   display: grid;
   place-items: center;
   width: 100%;
-  color: white;
+  color: var(--cover-text, white);
   filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.22));
   opacity: 0.95;
 }
@@ -616,9 +620,9 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
    inherits the cookbook's --cover color (set on the card element), so the
    editor's color picker controls this panel automatically. Sits on top of
    any image cover so text stays readable.
-   align-self: center + max-width:100% lets the panel shrink to the text
-   it actually contains — a "Cake" cookbook gets a tight little label, a
-   long-titled cookbook gets a wider one, never wider than the card. */
+   align-self: stretch makes the panel claim the full horizontal width of
+   the card's content area (a designated label band, like a school notebook
+   sticker), and the text inside stays centred via text-align: center. */
 .cookbook-label {
   display: flex;
   flex-direction: column;
@@ -629,8 +633,7 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
   border-radius: 10px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.10);
   border: 1px solid rgba(255, 255, 255, 0.40);
-  align-self: center;
-  max-width: 100%;
+  align-self: stretch;
   text-align: center;
 }
 .cookbook-cover-title {
@@ -639,16 +642,24 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
   font-weight: 600;
   font-style: italic;
   letter-spacing: -0.01em;
-  line-height: 1.15;
+  /* No `overflow: hidden` and no `-webkit-line-clamp`. Italic Fraunces
+     glyphs extend past their typographic bounding box in two directions:
+     the dot of italic *i* and ascenders on *k* / *l* / *b* sit above the
+     cap-height, and italic terminals at the end of every letter lean
+     past the right edge of the glyph box. Any clip on this element
+     shears one or the other (or both). Letting the title flow without a
+     clip means the italic dots, swashes, and trailing terminals all
+     render in full. Long titles wrap naturally onto extra lines and
+     the label panel grows; the icon area below uses flex so it shrinks
+     gracefully to compensate. */
+  line-height: 1.35;
   margin: 0;
+  padding: 0.25em 0.2em 0.1em;
   text-align: center;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
-  color: white;
+  color: var(--cover-text, white);
   word-break: break-word;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  hyphens: auto;
 }
 .cookbook-cover-desc {
   font-size: 11.5px;
@@ -662,7 +673,7 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.10);
-  color: white;
+  color: var(--cover-text, white);
 }
 .cookbook-cover-meta {
   display: flex;
@@ -674,7 +685,7 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
   text-transform: uppercase;
   letter-spacing: 0.06em;
   opacity: 0.95;
-  color: white;
+  color: var(--cover-text, white);
 }
 .cookbook-cover-meta svg { width: 12px; height: 12px; }
 
@@ -1114,7 +1125,11 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
   box-shadow: var(--shadow-md);
   position: relative;
 }
-.cookbook-spine svg { width: 54px; height: 54px; color: white; }
+.cookbook-spine svg {
+  width: 54px; height: 54px;
+  color: var(--cover-text, white);
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.30));
+}
 .cookbook-spine[data-cover="image"] { background-size: cover; background-position: center; }
 .cookbook-spine[data-cover="image"]::after { display: none; }
 .cookbook-spine::after {
@@ -1236,9 +1251,32 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-.recipe-card-meta { display: flex; gap: var(--s-3); color: var(--text-muted); font-size: var(--step--1); margin-top: auto; }
+.recipe-card-meta { display: flex; align-items: center; gap: var(--s-3); color: var(--text-muted); font-size: var(--step--1); margin-top: auto; }
 .recipe-card-meta .dot { color: var(--pink-200); }
 .recipe-card .star-rating { font-size: 0.85em; }
+/* "Original" external-source pill — tucks into the bottom-right of each
+   recently-viewed card. Visual weight matches the surrounding meta so it
+   feels like the card's natural footer, not a stamped-on action. */
+.recipe-card-source {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px 3px 7px;
+  border-radius: var(--r-pill);
+  background: var(--pink-50);
+  color: var(--berry);
+  font-size: var(--step--1);
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid var(--border);
+  transition: background var(--dur-quick), transform var(--dur-quick), color var(--dur-quick);
+  white-space: nowrap;
+}
+.recipe-card-source svg { width: 12px; height: 12px; }
+.recipe-card-source:hover { background: var(--pink-100); color: var(--pink-700, var(--berry)); transform: translateY(-1px); }
+.recipe-card-source:focus-visible { outline: 2px solid var(--berry); outline-offset: 2px; }
+.recipe-card-clickable { cursor: pointer; }
+.recipe-card-clickable:focus-visible { outline: 2px solid var(--berry); outline-offset: 2px; }
 .recipe-card-tab {
   position: absolute;
   top: var(--s-3); left: var(--s-3);
@@ -1422,6 +1460,11 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
   grid-template-columns: repeat(8, 1fr);
   gap: var(--s-2);
 }
+/* Text-colour grid uses 6 columns so its 12 chips form a clean 2×6 block
+   (the 8-col grid would leave an awkward 8+4 split). */
+.swatch-grid-text {
+  grid-template-columns: repeat(6, 1fr);
+}
 .swatch {
   aspect-ratio: 1;
   border-radius: 50%;
@@ -1431,6 +1474,27 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
 }
 .swatch:hover { transform: scale(1.1); }
 .swatch.selected { border-color: var(--cocoa); box-shadow: var(--shadow-focus); }
+
+/* Text-colour swatches sample the actual glyph rendering against the
+   cookbook's currently chosen cover colour (via --preview-cover set on
+   the editor root), so the user judges contrast as it will really look. */
+.swatch-text {
+  aspect-ratio: 1;
+  border-radius: var(--r-md);
+  border: 2px solid var(--border);
+  display: grid; place-items: center;
+  background: var(--preview-cover, var(--pink-50));
+}
+.swatch-text:hover { transform: scale(1.06); }
+.swatch-text.selected { border-color: var(--cocoa); box-shadow: var(--shadow-focus); }
+.swatch-text-mark {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-weight: 600;
+  font-size: 1.15rem;
+  line-height: 1;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.08);
+}
 
 /* Icon picker */
 .icon-grid {
@@ -1451,6 +1515,32 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
 .icon-pick svg { width: 26px; height: 26px; }
 .icon-pick:hover { background: var(--pink-100); }
 .icon-pick.selected { border-color: var(--pink-400); background: var(--pink-100); }
+
+/* Variant used inside the cookbook editor — each icon tile previews
+   against the cookbook's chosen cover colour and text colour, so the
+   user sees the icon as it will actually render on the card. */
+.icon-pick.icon-pick-preview {
+  background: var(--preview-cover, var(--pink-50));
+  color: var(--preview-text, var(--berry));
+}
+.icon-pick.icon-pick-preview svg { filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.18)); }
+.icon-pick.icon-pick-preview:hover { background: var(--preview-cover, var(--pink-100)); filter: brightness(0.95); }
+.icon-pick.icon-pick-preview.selected { border-color: var(--cocoa); box-shadow: var(--shadow-focus); background: var(--preview-cover, var(--pink-100)); }
+
+/* The "no icon" chip is the first tile in the cookbook editor's icon
+   picker. It needs to read as "blank label only" at a glance — a dashed
+   border + a large em-dash is the same pattern used in the tab editor. */
+.icon-pick.icon-pick-none {
+  border-style: dashed;
+  border-color: var(--border-strong);
+  font-size: 1.4rem;
+  line-height: 1;
+  font-weight: 600;
+  color: var(--preview-text, var(--berry));
+}
+.icon-pick.icon-pick-none.selected {
+  border-style: solid;
+}
 
 /* ============================================================== */
 /* TOAST ---------------------------------------------------------- */
@@ -1901,8 +1991,9 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
   .ing-note-arrow,
   .section-title::after, .instruction-section::before { display: none !important; }
 
-  /* Empty checkbox square next to each ingredient so the cook can tick
-     them off on the printed page. Show the box, hide its inner check svg. */
+  /* Empty checkbox square sits inline with each ingredient (left of the
+     text), so the cook can tick them off on the printed page. Show the
+     box, hide its inner check svg. */
   .ingredient-check {
     display: inline-block !important;
     width: 8.5pt !important;
@@ -1915,29 +2006,33 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
     vertical-align: top !important;
   }
   .ingredient-check svg { display: none !important; }
-  .ingredient-item {
-    display: flex !important;
-    align-items: flex-start !important;
-    padding: 1pt 0 !important;
-    margin: 0 !important;
-    background: none !important;
-    border: none !important;
-    break-inside: avoid;
-  }
   .ingredient-text { flex: 1 1 auto; min-width: 0; }
 
   /* Force list-style off in print. The global `ul, ol { list-style: none }`
      reset usually handles this, but some print engines reinstate default
      bullet/decimal markers on flex-display <li> items, which was rendering
-     as a stray "·" between every numbered instruction step. */
+     as a stray "·" between every numbered instruction step. content: none
+     (not "") is the form that fully omits the marker box. */
   ol, ul, .instructions, .ingredient-list {
     list-style: none !important;
     list-style-type: none !important;
+    list-style-image: none !important;
     padding-left: 0 !important;
     margin-left: 0 !important;
   }
-  li, .instruction, .ingredient-item { list-style: none !important; }
-  li::marker, .instruction::marker, .ingredient-item::marker { content: "" !important; }
+  li, .instruction, .ingredient-item {
+    list-style: none !important;
+    list-style-type: none !important;
+  }
+  li::marker, .instruction::marker, .ingredient-item::marker,
+  .instructions > li::marker, .ingredient-list > li::marker {
+    content: none !important;
+    display: none !important;
+  }
+  .instructions > li::before, .ingredient-list > li::before {
+    content: none !important;
+    display: none !important;
+  }
 
   .container { max-width: none !important; padding: 0 !important; margin: 0 !important; }
 
@@ -2000,34 +2095,30 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
   }
   .rating-text { font-size: 9pt !important; }
   .rating-count { font-size: 7pt !important; }
+  /* Source URL is rendered as a real <a href> in the markup, so Chrome's
+     "Save as PDF" preserves it as a clickable link annotation. Give it an
+     obvious link affordance (berry colour, underline, visible external
+     icon) so the reader knows it's tappable in the PDF instead of looking
+     like greyed-out metadata. */
   .source-link {
-    font-size: 7.5pt !important;
-    color: #555 !important;
+    font-size: 8pt !important;
+    color: #B23A6D !important;
+    text-decoration: underline !important;
+    text-underline-offset: 1.5pt;
+    text-decoration-thickness: 0.4pt;
   }
-  .source-link svg { display: none !important; }
+  .source-link svg {
+    display: inline-block !important;
+    width: 7.5pt !important;
+    height: 7.5pt !important;
+    color: #B23A6D !important;
+    margin-right: 1.5pt;
+    vertical-align: -0.5pt;
+  }
 
-  /* Servings — keep the multiplier label visible, hide the stepper */
-  .servings-control {
-    background: none !important;
-    border: none !important;
-    padding: 0 !important;
-    margin: 0 0 4pt !important;
-    display: flex !important;
-    align-items: baseline !important;
-    gap: 6pt !important;
-  }
-  .servings-control .label { font-size: 6.5pt !important; font-weight: 700; color: #777 !important; letter-spacing: 0.08em; }
-  .servings-multiplier-badge {
-    background: none !important;
-    color: #1d1418 !important;
-    padding: 0 !important;
-    font-size: 9pt !important;
-    font-family: Georgia, serif !important;
-    font-weight: 600;
-    box-shadow: none !important;
-    transform: none !important;
-  }
-  .servings-label-col { flex-direction: row !important; align-items: baseline !important; gap: 6pt !important; }
+  /* Servings stepper is hidden entirely in print (it's in the display:none
+     list at the top of @media print). The scaled MAKES value already shows
+     in the top meta strip, so a duplicate "MAKES ×N" row would be noise. */
 
   /* ── section titles ─────────────────────────────────────────────── */
   .section-title {
@@ -2055,17 +2146,22 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
     column-fill: balance;
   }
   .ingredient-item {
+    /* Flex keeps the checkbox sitting on the same line as the ingredient
+       text rather than stacking it above (which is what the cook expects
+       on a printed list — square, then quantity/name on one line). */
+    display: flex !important;
+    align-items: flex-start !important;
     padding: 0.5pt 0 !important;
     margin: 0 !important;
     background: none !important;
     border: none !important;
     break-inside: avoid;
-    display: block !important;
   }
   .ingredient-text {
     font-size: 8.5pt !important;
     line-height: 1.28 !important;
-    display: block !important;
+    display: inline !important;
+    flex: 1 1 auto;
   }
   .ingredient-text .qty { color: #B23A6D !important; font-weight: 700; }
   .ingredient-text .unit { color: #555 !important; }
@@ -2113,7 +2209,9 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
     flex-shrink: 0;
     text-align: right;
   }
-  .instruction .step-num::after { content: "."; }
+  /* No trailing period on the step number — combined with the empty ::marker
+     above this fully suppresses any stray "." or "·" between steps. */
+  .instruction .step-num::after { content: none !important; }
   .instruction .step-text {
     font-size: 9pt !important;
     padding: 0 !important;

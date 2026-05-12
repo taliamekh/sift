@@ -36,6 +36,41 @@ const TAB_COLORS = [
   '#D4F0C2', '#B7DEC5', '#B8D8E8', '#D8C7E8',
 ];
 
+// Curated text colours for the cookbook label + icon. Four groupings,
+// each tuned to complement a family of COOKBOOK_COLORS:
+//   • lights — read on rich pastels, photo covers, and the deep-pink
+//     #C2185B / #EC407A swatches
+//   • cute mid-tones — saturated, playful, match the pastel-recipe-book
+//     vibe and read well on the lightest pastel covers
+//   • warm darks — sit naturally on the peach/cream/yellow row
+//   • cool darks / near-black — pair with the green/blue/lavender/purple
+//     covers and provide deep ink for any white-ish cover
+// Three rows of six in the editor.
+const COOKBOOK_TEXT_COLORS = [
+  // Lights
+  { value: '#FFFFFF', label: 'White' },
+  { value: '#FFF4E6', label: 'Cream' },
+  { value: '#FFE8F1', label: 'Blush' },
+  // Cute mid-tones (saturated, playful)
+  { value: '#F26CA7', label: 'Bubblegum' },
+  { value: '#FF7E7E', label: 'Coral' },
+  { value: '#F0B530', label: 'Sunny' },
+  { value: '#5FB48C', label: 'Mint' },
+  { value: '#5FB5DE', label: 'Sky' },
+  { value: '#A98BD8', label: 'Lavender' },
+  // Warm darks
+  { value: '#8C4A2E', label: 'Rust' },
+  { value: '#8C6E2F', label: 'Mustard' },
+  { value: '#4A2C3A', label: 'Cocoa' },
+  // Deep pinks → cool darks → near-black
+  { value: '#7A1F47', label: 'Berry' },
+  { value: '#5C2E5C', label: 'Plum' },
+  { value: '#2A3A5C', label: 'Navy' },
+  { value: '#4F6B4D', label: 'Sage' },
+  { value: '#2E4A33', label: 'Forest' },
+  { value: '#2A1E25', label: 'Ink' },
+];
+
 // ─── Cookbook editor ───────────────────────────────────────────────────────
 
 export function openCookbookEditor({ cookbook = null, onSave }) {
@@ -44,23 +79,37 @@ export function openCookbookEditor({ cookbook = null, onSave }) {
   let iconName = cookbook?.coverIcon || 'cupcake';
   let description = cookbook?.description || '';
   let coverImage = cookbook?.coverImage || null;
+  let textColor = cookbook?.coverTextColor || '#FFFFFF';
 
   const root = h('div.stack-5');
   root.appendChild(h('h3', cookbook ? 'Edit cookbook' : 'New cookbook'));
 
-  // Preview — when a cover image is set, it takes precedence over color/icon
+  // Preview — shows the icon over the image cover too, so users can pick a
+  // combo (image + icon + text colour) without saving first.
   const preview = h('div', { style: { display: 'grid', placeItems: 'center', marginBottom: 'var(--s-2)' } });
   const previewBox = h('div.cookbook-spine');
   const previewIcon = h('span', { 'aria-hidden': 'true', style: { display: 'inline-flex' } });
   const refreshPreview = () => {
+    // "none" is the explicit no-icon sentinel — cleared innerHTML keeps the
+    // preview box uncluttered (label-only cover).
+    previewIcon.innerHTML = iconName === 'none' ? '' : icon(iconName);
+    // The .cookbook-spine svg rule resolves its colour from --cover-text,
+    // so we set it on the preview box rather than relying on inherited
+    // span colour (which the more-specific rule would override).
+    previewBox.style.setProperty('--cover-text', textColor);
     if (coverImage) {
       previewBox.style.background = `center/cover no-repeat url(${JSON.stringify(coverImage)})`;
-      previewIcon.style.display = 'none';
+      previewBox.setAttribute('data-cover', 'image');
     } else {
       previewBox.style.background = color;
-      previewIcon.style.display = '';
-      previewIcon.innerHTML = icon(iconName);
+      previewBox.removeAttribute('data-cover');
     }
+    // Propagate the live cover + text colour to the icon and text-colour
+    // picker tiles via CSS vars on the modal root, so each tile renders
+    // its glyph against the actual cookbook background the user is
+    // building — true preview rather than a generic pink swatch.
+    root.style.setProperty('--preview-cover', color);
+    root.style.setProperty('--preview-text', textColor);
   };
   previewBox.appendChild(previewIcon);
   preview.appendChild(previewBox);
@@ -152,12 +201,52 @@ export function openCookbookEditor({ cookbook = null, onSave }) {
     });
     swatchGrid.appendChild(s);
   });
-  root.appendChild(labelled('Cover color (when no image is selected)', swatchGrid));
+  root.appendChild(labelled('Notebook colour', swatchGrid));
 
-  // Icon picker
+  // Text colour — applies to title, description, MAKES meta, and icon.
+  // Each chip's background is the cookbook's currently selected cover
+  // colour (via --preview-cover), so the user sees the actual contrast
+  // before committing. Placed above the icon picker so the chosen text
+  // colour is also what tints the icon-picker tiles below.
+  // 6-column grid → 12 chips form a clean 2×6 block.
+  const textColorGrid = h('div.swatch-grid.swatch-grid-text');
+  COOKBOOK_TEXT_COLORS.forEach(({ value, label }) => {
+    const s = h('button.swatch.swatch-text', {
+      type: 'button',
+      'aria-label': `Text colour ${label}`,
+      title: label,
+    });
+    s.innerHTML = `<span class="swatch-text-mark" style="color:${value}">Aa</span>`;
+    if (value === textColor) s.classList.add('selected');
+    s.addEventListener('click', () => {
+      textColor = value;
+      $$('.swatch-text', textColorGrid).forEach(b => b.classList.toggle('selected', b === s));
+      refreshPreview();
+    });
+    textColorGrid.appendChild(s);
+  });
+  root.appendChild(labelled('Text & icon colour', textColorGrid));
+
+  // Icon picker — rendered on top of every cover (image or color). Tile
+  // background = --preview-cover, glyph = --preview-text, so each option
+  // shows what the icon will look like over the actual cookbook colour.
+  // First chip is a "no icon" option so the user can keep a clean
+  // label-only cover (mirrors the tab editor's pattern).
   const iconGrid = h('div.icon-grid');
+  const noneIcon = h('button.icon-pick.icon-pick-preview.icon-pick-none', {
+    type: 'button',
+    'aria-label': 'No icon',
+    title: 'No icon',
+  }, '—');
+  if (iconName === 'none') noneIcon.classList.add('selected');
+  noneIcon.addEventListener('click', () => {
+    iconName = 'none';
+    $$('.icon-pick', iconGrid).forEach(b => b.classList.toggle('selected', b === noneIcon));
+    refreshPreview();
+  });
+  iconGrid.appendChild(noneIcon);
   COOKBOOK_ICONS.forEach(n => {
-    const i = h('button.icon-pick', { type: 'button', 'aria-label': n });
+    const i = h('button.icon-pick.icon-pick-preview', { type: 'button', 'aria-label': n });
     i.innerHTML = icon(n);
     if (n === iconName) i.classList.add('selected');
     i.addEventListener('click', () => {
@@ -167,7 +256,7 @@ export function openCookbookEditor({ cookbook = null, onSave }) {
     });
     iconGrid.appendChild(i);
   });
-  root.appendChild(labelled('Icon (when no image is selected)', iconGrid));
+  root.appendChild(labelled('Icon', iconGrid));
 
   // Actions
   const actions = h('div.row');
@@ -198,6 +287,7 @@ export function openCookbookEditor({ cookbook = null, onSave }) {
         coverColor: color,
         coverIcon: iconName,
         coverImage,
+        coverTextColor: textColor,
         description: description.trim() || null,
       };
       const result = cookbook
