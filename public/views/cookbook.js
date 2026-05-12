@@ -3,6 +3,7 @@ import { icon } from '../lib/icons.js';
 import { api } from '../lib/api.js';
 import { navigate } from '../lib/router.js';
 import { StarRating } from '../components/starRating.js';
+import { Breadcrumb } from '../components/breadcrumb.js';
 import { openCookbookEditor, openTabEditor } from '../components/editors.js';
 import * as toast from '../lib/toast.js';
 
@@ -36,10 +37,11 @@ export async function CookbookView({ id }) {
   function render() {
     mount(root);
 
-    // Back nav
-    const back = h('button.btn.btn-ghost.btn-sm', { type: 'button', onClick: () => navigate('/') });
-    back.innerHTML = `${icon('arrowLeft')}<span>All cookbooks</span>`;
-    root.appendChild(back);
+    // Breadcrumb
+    root.appendChild(Breadcrumb([
+      { label: 'Home', href: '#/', icon: 'home' },
+      { label: state.cookbook.name },
+    ]));
 
     // Header
     const header = h('header.cookbook-header');
@@ -68,53 +70,24 @@ export async function CookbookView({ id }) {
     header.appendChild(info);
     root.appendChild(header);
 
-    // Tab bar
-    const tabBar = h('nav.tab-bar', { role: 'tablist' });
-    const allTab = h('button.tab', { type: 'button', role: 'tab', 'aria-selected': state.activeTabId == null ? 'true' : 'false' });
-    allTab.innerHTML = `<span class="tab-color" style="background: var(--pink-200)"></span><span>All</span><span class="tab-count">${state.recipes.length}</span>`;
-    allTab.addEventListener('click', () => { state.activeTabId = null; render(); });
-    tabBar.appendChild(allTab);
+    // Book layout: paper-textured page on the left with tabs sticking out on
+    // the right edge like a recipe binder.
+    const book = h('div.cookbook-book');
 
-    state.tabs.forEach(t => {
-      const tab = h('button.tab', { type: 'button', role: 'tab', 'aria-selected': state.activeTabId === t.id ? 'true' : 'false' });
-      const iconHtml = t.icon ? icon(t.icon) : '';
-      tab.innerHTML = `<span class="tab-color" style="background: ${t.color}"></span>${iconHtml ? `<span class="tab-icon" style="display:inline-flex;width:16px;height:16px;color:${darken(t.color)}">${iconHtml}</span>` : ''}<span>${escapeText(t.name)}</span><span class="tab-count">${t.recipeCount}</span>`;
-      tab.addEventListener('click', () => { state.activeTabId = t.id; render(); });
-      // Right-click / long-press → edit
-      tab.addEventListener('contextmenu', (e) => {
-        e.preventDefault();
-        openTabEditor({
-          tab: t,
-          cookbookId: state.cookbook.id,
-          onSave: () => load(),
-        });
-      });
-      // Double-click to edit too (more discoverable than right-click)
-      tab.addEventListener('dblclick', () => {
-        openTabEditor({
-          tab: t,
-          cookbookId: state.cookbook.id,
-          onSave: () => load(),
-        });
-      });
-      tabBar.appendChild(tab);
-    });
+    const page = h('div.cookbook-page');
+    page.style.borderLeftColor = state.cookbook.coverColor || '#F8B4D9';
+    book.appendChild(page);
 
-    const newTab = h('button.tab.tab-new', { type: 'button' });
-    newTab.innerHTML = `${icon('plus')}<span>New tab</span>`;
-    newTab.addEventListener('click', () => {
-      openTabEditor({
-        cookbookId: state.cookbook.id,
-        onSave: () => load(),
-      });
-    });
-    tabBar.appendChild(newTab);
-    root.appendChild(tabBar);
-
-    // Edit-tab hint
-    if (state.tabs.length > 0) {
-      root.appendChild(h('p.muted', { style: { fontSize: 'var(--step--1)', marginTop: '-12px' } }, 'Tip: double-click a tab to rename or recolor it.'));
+    // Page header — current tab name as a section title on the page
+    const activeTab = state.activeTabId ? state.tabs.find(t => t.id === state.activeTabId) : null;
+    const pageHead = h('div.cookbook-page-head');
+    if (activeTab) {
+      const iconHtml = activeTab.icon ? `<span class="ph-icon">${icon(activeTab.icon)}</span>` : '';
+      pageHead.innerHTML = `${iconHtml}<h2 style="color:${darken(activeTab.color)}">${escapeText(activeTab.name)}</h2>`;
+    } else {
+      pageHead.innerHTML = `<h2>All recipes</h2>`;
     }
+    page.appendChild(pageHead);
 
     // Recipes
     const recipesToShow = state.activeTabId
@@ -126,18 +99,67 @@ export async function CookbookView({ id }) {
       empty.appendChild(h('div.empty-illustration', { html: icon('bookmark') }));
       empty.appendChild(h('h3', state.activeTabId ? 'Nothing in this tab yet' : 'No recipes in this cookbook'));
       empty.appendChild(h('p', state.activeTabId
-        ? 'Save a recipe to this tab from the recipe page, or drag one here.'
+        ? 'Save a recipe and drop it in this tab from the recipe page.'
         : 'Paste a recipe URL from the home page to get started.'));
       const cta = h('button.btn.btn-primary', { style: { marginTop: 'var(--s-4)' }, onClick: () => navigate('/') });
       cta.innerHTML = `${icon('home')}<span>Back home</span>`;
       empty.appendChild(cta);
-      root.appendChild(empty);
-      return;
+      page.appendChild(empty);
+    } else {
+      const grid = h('div.recipe-grid');
+      recipesToShow.forEach(r => grid.appendChild(recipeCard(r, state)));
+      page.appendChild(grid);
     }
 
-    const grid = h('div.recipe-grid');
-    recipesToShow.forEach(r => grid.appendChild(recipeCard(r, state)));
-    root.appendChild(grid);
+    // Side tabs (right edge of the book)
+    const tabsNav = h('nav.cookbook-tabs', { role: 'tablist', 'aria-label': 'Cookbook sections' });
+
+    const allTab = h('button.cookbook-tab', {
+      type: 'button',
+      role: 'tab',
+      'aria-selected': state.activeTabId == null ? 'true' : 'false',
+      style: { background: 'var(--pink-200)' },
+    });
+    allTab.innerHTML = `<span class="ct-label">All</span><span class="ct-count">${state.recipes.length}</span>`;
+    allTab.addEventListener('click', () => { state.activeTabId = null; render(); });
+    tabsNav.appendChild(allTab);
+
+    state.tabs.forEach(t => {
+      const tab = h('button.cookbook-tab', {
+        type: 'button',
+        role: 'tab',
+        'aria-selected': state.activeTabId === t.id ? 'true' : 'false',
+        style: { background: t.color },
+      });
+      const iconHtml = t.icon ? `<span class="ct-icon" style="color:${darken(t.color)}">${icon(t.icon)}</span>` : '';
+      tab.innerHTML = `${iconHtml}<span class="ct-label" style="color:${darken(t.color)}">${escapeText(t.name)}</span><span class="ct-count">${t.recipeCount}</span>`;
+      tab.addEventListener('click', () => { state.activeTabId = t.id; render(); });
+
+      // Edit affordance: a small pencil button that appears on hover/focus.
+      const editBtn = h('button.ct-edit', {
+        type: 'button',
+        'aria-label': `Edit tab ${t.name}`,
+        title: 'Edit this tab',
+      });
+      editBtn.innerHTML = icon('edit');
+      editBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openTabEditor({ tab: t, cookbookId: state.cookbook.id, onSave: () => load() });
+      });
+      tab.appendChild(editBtn);
+
+      tabsNav.appendChild(tab);
+    });
+
+    const newTab = h('button.cookbook-tab.cookbook-tab-new', { type: 'button' });
+    newTab.innerHTML = `<span class="ct-icon">${icon('plus')}</span><span class="ct-label">New tab</span>`;
+    newTab.addEventListener('click', () => {
+      openTabEditor({ cookbookId: state.cookbook.id, onSave: () => load() });
+    });
+    tabsNav.appendChild(newTab);
+
+    book.appendChild(tabsNav);
+    root.appendChild(book);
   }
 
   load();

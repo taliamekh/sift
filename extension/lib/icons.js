@@ -14,6 +14,6 @@
     sparkle: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M12 3l1.6 5.4L19 10l-5.4 1.6L12 17l-1.6-5.4L5 10l5.4-1.6z" fill="currentColor" fill-opacity="0.3"/></svg>`,
     print: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><rect x="3" y="9" width="18" height="9" rx="2"/><path d="M6 17h12v4H6z"/></svg>`,
   };
-  window.SugarSkip = window.SugarSkip || {};
-  window.SugarSkip.icon = (name) => ICONS[name] || ICONS.sparkle;
+  window.Sift = window.Sift || {};
+  window.Sift.icon = (name) => ICONS[name] || ICONS.sparkle;
 })();

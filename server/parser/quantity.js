@@ -104,8 +104,9 @@ function readLeadingQuantity(str) {
     }
   }
 
-  // Numeric form
-  const numRe = /^(\d+(?:[.,]\d+)?|\d+\/\d+|[½⅓⅔¼¾⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞])/;
+  // Numeric form. Fraction pattern MUST come before decimal so "3/4" parses
+  // as 0.75 instead of decimal-3 leaving "/4" stranded in the ingredient name.
+  const numRe = /^(\d+\/\d+|\d+(?:[.,]\d+)?|[½⅓⅔¼¾⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞])/;
   const first = s.match(numRe);
   if (!first) return null;
 

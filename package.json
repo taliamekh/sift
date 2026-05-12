@@ -1,7 +1,7 @@
 {
-  "name": "sugar-skip",
-  "version": "1.0.0",
-  "description": "Skip the story, get straight to the recipe. Pastel pink baking companion with cookbook and Chrome extension.",
+  "name": "sift",
+  "version": "1.1.0",
+  "description": "Skip the story, get to the recipe. Pastel pink recipe reader with cookbook, tabs, notes, and Chrome extension.",
   "type": "module",
   "private": true,
   "main": "server/index.js",

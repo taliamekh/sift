@@ -12,8 +12,11 @@ const COOKBOOK_COLORS = [
   '#C5C2E8', '#D8C7E8', '#E8C7D8', '#C2185B',
 ];
 
-const COOKBOOK_ICONS = ['cupcake', 'cookie', 'cake', 'bread', 'donut', 'croissant',
-                        'pie', 'bowl', 'heart', 'flower', 'sparkle', 'whisk'];
+const COOKBOOK_ICONS = [
+  'cupcake', 'cookie', 'cake', 'bread', 'donut', 'croissant', 'pie', 'bowl',
+  'whisk', 'rollingPin', 'mixer', 'pot', 'oven', 'knife', 'fork', 'spoon',
+  'mug', 'kettle', 'saltShaker', 'scale', 'herb', 'apple', 'heart', 'flower',
+];
 
 const TAB_COLORS = [
   '#FFD6E8', '#FFC2D6', '#FFB1CC', '#F8A1B6',

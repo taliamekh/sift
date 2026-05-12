@@ -54,5 +54,5 @@ app.use((err, req, res, _next) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`\n  Sugar Skip is live at  →  http://localhost:${PORT}\n`);
+  console.log(`\n  Sift is live at  →  http://localhost:${PORT}\n`);
 });

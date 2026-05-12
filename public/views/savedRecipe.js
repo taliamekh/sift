@@ -4,6 +4,7 @@ import { api } from '../lib/api.js';
 import { navigate } from '../lib/router.js';
 import { RecipeView } from '../components/recipeView.js';
 import { StarInput, StarRating } from '../components/starRating.js';
+import { Breadcrumb } from '../components/breadcrumb.js';
 import * as toast from '../lib/toast.js';
 
 export async function SavedRecipeView({ id }) {
@@ -32,6 +33,12 @@ export async function SavedRecipeView({ id }) {
     ));
     return root;
   }
+
+  // Breadcrumb so users can always get back home or to the cookbook
+  const crumbs = [{ label: 'Home', href: '#/', icon: 'home' }];
+  if (cookbook) crumbs.push({ label: cookbook.name, href: `#/cookbook/${cookbook.id}`, icon: cookbook.coverIcon });
+  crumbs.push({ label: recipe.title || 'Recipe' });
+  root.appendChild(Breadcrumb(crumbs));
 
   // Side content: user rating + notes + photos + cookbook/tab
   const sideContent = buildSideContent(recipe, photos, cookbook, tabs);

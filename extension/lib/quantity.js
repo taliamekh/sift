@@ -1,5 +1,5 @@
 // Ingredient quantity parser/formatter for the extension popup.
-// Adds to window.SugarSkip namespace (no ES module imports — runs as a
+// Adds to window.Sift namespace (no ES module imports — runs as a
 // classic script alongside parser.js).
 
 (function () {
@@ -71,7 +71,8 @@
         return { value: NUMBER_WORDS[word[1].toLowerCase()], end: word[0].length };
       }
     }
-    const numRe = /^(\d+(?:[.,]\d+)?|\d+\/\d+|[½⅓⅔¼¾⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞])/;
+    // Fraction first so "3/4" doesn't parse as decimal-3 + stranded "/4".
+    const numRe = /^(\d+\/\d+|\d+(?:[.,]\d+)?|[½⅓⅔¼¾⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞])/;
     const first = s.match(numRe);
     if (!first) return null;
     let value = parseNumericToken(first[1].replace(',', '.'));
@@ -147,8 +148,8 @@
     return { qty, unit: p.unit || '', name: p.name || '' };
   }
 
-  window.SugarSkip = window.SugarSkip || {};
-  window.SugarSkip.parseIngredient = parseIngredient;
-  window.SugarSkip.formatQuantity = formatQuantity;
-  window.SugarSkip.renderIngredientParts = renderIngredientParts;
+  window.Sift = window.Sift || {};
+  window.Sift.parseIngredient = parseIngredient;
+  window.Sift.formatQuantity = formatQuantity;
+  window.Sift.renderIngredientParts = renderIngredientParts;
 })();

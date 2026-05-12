@@ -6,7 +6,7 @@ const SERVER = 'http://localhost:4747';
 
 const root = document.getElementById('popup-root');
 const brandMark = document.querySelector('.brand-mark');
-brandMark.innerHTML = window.SugarSkip.icon('whisk');
+brandMark.innerHTML = window.Sift.icon('whisk');
 
 const openAppBtn = document.getElementById('open-app');
 let lastRecipe = null;
@@ -26,7 +26,7 @@ async function init() {
   }
   if (!/^https?:/.test(tab.url || '')) {
     return showError(
-      'Open a recipe page first, then click the Sugar Skip icon.',
+      'Open a recipe page first, then click the Sift icon.',
       'The popup only works on regular web pages.'
     );
   }
@@ -42,7 +42,7 @@ async function init() {
 
   const [{ result }] = await chrome.scripting.executeScript({
     target: { tabId: tab.id },
-    func: () => window.SugarSkip?.extractRecipe?.() || null,
+    func: () => window.Sift?.extractRecipe?.() || null,
   });
 
   if (!result || (!result.ingredients?.length && !result.instructions?.length)) {
@@ -84,7 +84,7 @@ function showState({ spinner = false, icon = 'sparkle', title, body }) {
   root.innerHTML = '';
   const state = el('div', { class: 'state' });
   if (spinner) state.appendChild(el('div', { class: 'spinner' }));
-  else state.innerHTML = window.SugarSkip.icon(icon);
+  else state.innerHTML = window.Sift.icon(icon);
   state.appendChild(el('h2', {}, title));
   if (body) state.appendChild(el('p', {}, body));
   root.appendChild(state);
@@ -104,13 +104,8 @@ function formatMinutes(m) {
 function renderRecipe(recipe) {
   root.innerHTML = '';
 
-  // Title + description
+  // Title only — the long description is exactly what we're skipping.
   if (recipe.title) root.appendChild(el('h1', { class: 'r-title' }, recipe.title));
-  if (recipe.description) {
-    // Trim descriptions that are obviously the whole intro paragraph
-    const desc = recipe.description.length > 220 ? recipe.description.slice(0, 220).trim() + '…' : recipe.description;
-    root.appendChild(el('p', { class: 'r-description' }, desc));
-  }
 
   // Meta
   const metaItems = [];
@@ -136,14 +131,23 @@ function renderRecipe(recipe) {
     section.appendChild(el('div', { class: 'section-h' }, 'Ingredients'));
 
     const originalServings = recipe.servings || 1;
-    const state = { servings: originalServings, done: new Set() };
+    // Ratio-based scaling — same logic as the web app. Stepping by clean
+    // fractions keeps quantities sensible (no 1.83 eggs).
+    const RATIOS = [
+      { mul: 1 / 4, label: '¼' }, { mul: 1 / 3, label: '⅓' },
+      { mul: 1 / 2, label: '½' }, { mul: 2 / 3, label: '⅔' },
+      { mul: 3 / 4, label: '¾' }, { mul: 1, label: '1' },
+      { mul: 3 / 2, label: '1½' }, { mul: 2, label: '2' },
+      { mul: 3, label: '3' }, { mul: 4, label: '4' },
+    ];
+    const state = { idx: RATIOS.findIndex(r => r.mul === 1), done: new Set() };
 
     const serving = el('div', { class: 'servings' });
-    serving.appendChild(el('span', { class: 'label' }, 'Servings'));
+    serving.appendChild(el('span', { class: 'label' }, 'Makes'));
     const stepper = el('div', { class: 'stepper' });
-    const minus = el('button', { type: 'button', 'aria-label': 'Decrease servings', html: window.SugarSkip.icon('minus') });
-    const valueEl = el('span', { class: 'value' }, String(state.servings));
-    const plus = el('button', { type: 'button', 'aria-label': 'Increase servings', html: window.SugarSkip.icon('plus') });
+    const minus = el('button', { type: 'button', 'aria-label': 'Smaller batch', html: window.Sift.icon('minus') });
+    const valueEl = el('span', { class: 'value' });
+    const plus = el('button', { type: 'button', 'aria-label': 'Larger batch', html: window.Sift.icon('plus') });
     stepper.append(minus, valueEl, plus);
     serving.appendChild(stepper);
     section.appendChild(serving);
@@ -152,12 +156,16 @@ function renderRecipe(recipe) {
     section.appendChild(list);
 
     const renderIngs = () => {
+      const ratio = RATIOS[state.idx];
+      const displayServings = Math.max(1, Math.round(originalServings * ratio.mul));
+      valueEl.textContent = String(displayServings);
+      minus.disabled = state.idx <= 0;
+      plus.disabled  = state.idx >= RATIOS.length - 1;
       list.innerHTML = '';
-      const factor = state.servings / (originalServings || 1);
       recipe.ingredients.forEach((ing, idx) => {
-        const parts = window.SugarSkip.renderIngredientParts(ing, factor);
+        const parts = window.Sift.renderIngredientParts(ing, ratio.mul);
         const li = el('li', { class: 'ing' + (state.done.has(idx) ? ' done' : '') });
-        li.appendChild(el('span', { class: 'ing-check', html: window.SugarSkip.icon('check') }));
+        li.appendChild(el('span', { class: 'ing-check', html: window.Sift.icon('check') }));
         const text = el('span', { class: 'text' });
         if (parts.qty)  { text.appendChild(el('span', { class: 'qty' }, parts.qty)); text.appendChild(document.createTextNode(' ')); }
         if (parts.unit) { text.appendChild(el('span', { class: 'unit' }, parts.unit)); text.appendChild(document.createTextNode(' ')); }
@@ -170,10 +178,9 @@ function renderRecipe(recipe) {
         list.appendChild(li);
       });
     };
+    minus.addEventListener('click', () => { if (state.idx > 0) { state.idx--; renderIngs(); }});
+    plus.addEventListener('click',  () => { if (state.idx < RATIOS.length - 1) { state.idx++; renderIngs(); }});
     renderIngs();
-    minus.addEventListener('click', () => { if (state.servings > 1) { state.servings--; valueEl.textContent = String(state.servings); minus.disabled = state.servings <= 1; renderIngs(); }});
-    plus.addEventListener('click',  () => { if (state.servings < 999) { state.servings++; valueEl.textContent = String(state.servings); minus.disabled = false; renderIngs(); }});
-    minus.disabled = state.servings <= 1;
 
     root.appendChild(section);
   }
@@ -207,12 +214,12 @@ function renderRecipe(recipe) {
   // Actions
   const actions = el('div', { class: 'actions' });
   const saveBtn = el('button', { class: 'btn btn-primary' });
-  saveBtn.innerHTML = `${window.SugarSkip.icon('bookmark')}<span>Save to cookbook</span>`;
+  saveBtn.innerHTML = `${window.Sift.icon('bookmark')}<span>Save to cookbook</span>`;
   saveBtn.addEventListener('click', () => saveToCookbook(saveBtn));
   actions.appendChild(saveBtn);
 
   const printBtn = el('button', { class: 'btn btn-secondary' });
-  printBtn.innerHTML = `${window.SugarSkip.icon('print')}<span>Print</span>`;
+  printBtn.innerHTML = `${window.Sift.icon('print')}<span>Print</span>`;
   printBtn.addEventListener('click', () => window.print());
   actions.appendChild(printBtn);
   root.appendChild(actions);
@@ -242,8 +249,8 @@ function renderStars(value, count) {
   const wrap = el('div', { class: 'stars' });
   wrap.innerHTML = `
     <span style="position:relative">
-      <span class="stars-track">${window.SugarSkip.icon('star').repeat(5)}</span>
-      <span class="stars-fill" style="width:${pct}%">${window.SugarSkip.icon('star').repeat(5)}</span>
+      <span class="stars-track">${window.Sift.icon('star').repeat(5)}</span>
+      <span class="stars-fill" style="width:${pct}%">${window.Sift.icon('star').repeat(5)}</span>
     </span>
     <span class="rating-text">${value.toFixed(1)}</span>
     ${count ? `<span class="rating-count">(${formatCount(count)})</span>` : ''}
@@ -294,11 +301,11 @@ async function saveToCookbook(btn) {
     const link = el('a', { href: `${SERVER}/#/saved/${result.recipe.id}`, target: '_blank', style: 'color:inherit; font-weight:700; text-decoration:underline;' }, 'Open it →');
     banner.appendChild(link);
     root.appendChild(banner);
-    btn.innerHTML = `${window.SugarSkip.icon('check')}<span>Saved!</span>`;
+    btn.innerHTML = `${window.Sift.icon('check')}<span>Saved!</span>`;
   } catch (e) {
     const banner = el('div', { class: 'toast-line err' },
       e.message.includes('fetch') || e.message.includes('Failed')
-        ? 'Saving needs the Sugar Skip app running. Start it with "npm start" in the project folder.'
+        ? 'Saving needs the Sift app running. Start it with "npm start" in the project folder.'
         : `Save failed: ${e.message}`
     );
     root.appendChild(banner);

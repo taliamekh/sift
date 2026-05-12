@@ -84,9 +84,8 @@ function renderHeader(recipe, state) {
 
   header.appendChild(h('h1', recipe.title || 'Untitled recipe'));
 
-  if (recipe.description) {
-    header.appendChild(h('p.description', recipe.description));
-  }
+  // Description intentionally omitted — the recipe site's "intro paragraph"
+  // is exactly the prose the user came here to skip.
 
   if (recipe.fetchedVia === 'reader-proxy') {
     const note = h('div.proxy-note', {}, [
@@ -169,24 +168,56 @@ function formatMinutes(m) {
   return `${h} hr ${r} min`;
 }
 
+// Servings stepper that scales by clean ratios instead of single-serving
+// increments. Stepping by 1 produces gross fractions (11/12 → 0.92 cup,
+// 1.83 eggs); stepping by ratios like ½× / ⅔× / 1× / 1½× / 2× keeps every
+// ingredient quantity rounded to a sensible cooking fraction.
+const SCALE_RATIOS = [
+  { mul: 1 / 4, label: '¼' },
+  { mul: 1 / 3, label: '⅓' },
+  { mul: 1 / 2, label: '½' },
+  { mul: 2 / 3, label: '⅔' },
+  { mul: 3 / 4, label: '¾' },
+  { mul: 1,     label: '1' },
+  { mul: 3 / 2, label: '1½' },
+  { mul: 2,     label: '2' },
+  { mul: 3,     label: '3' },
+  { mul: 4,     label: '4' },
+];
+const DEFAULT_RATIO_INDEX = SCALE_RATIOS.findIndex(r => r.mul === 1);
+
 function renderServingsControl(state, onChange, yieldText) {
+  state.ratioIndex = DEFAULT_RATIO_INDEX;
+  state.scaleFactor = 1;
+
   const wrap = h('div.servings-control');
-  wrap.appendChild(h('span.label', 'Servings'));
+  const labelCol = h('div', { style: { display: 'flex', flexDirection: 'column', gap: '2px' } },
+    h('span.label', 'Makes'),
+    h('span.servings-sub', '× 1 of the recipe'),
+  );
+  wrap.appendChild(labelCol);
+
   const stepper = h('div.stepper');
-  const minus = h('button', { 'aria-label': 'Decrease servings', type: 'button' });
+  const minus = h('button', { 'aria-label': 'Smaller batch', type: 'button' });
   minus.innerHTML = icon('minus');
-  const valueEl = h('span.value', { 'aria-live': 'polite' }, String(state.servings));
-  const plus = h('button', { 'aria-label': 'Increase servings', type: 'button' });
+  const valueEl = h('span.value', { 'aria-live': 'polite' });
+  const plus = h('button', { 'aria-label': 'Larger batch', type: 'button' });
   plus.innerHTML = icon('plus');
 
+  const subEl = labelCol.querySelector('.servings-sub');
+
   const update = () => {
+    const ratio = SCALE_RATIOS[state.ratioIndex];
+    state.scaleFactor = ratio.mul;
+    state.servings = Math.max(1, Math.round((state.originalServings || 1) * ratio.mul));
     valueEl.textContent = String(state.servings);
-    minus.disabled = state.servings <= 1;
-    plus.disabled = state.servings >= 999;
+    subEl.textContent = `× ${ratio.label} of the recipe`;
+    minus.disabled = state.ratioIndex <= 0;
+    plus.disabled = state.ratioIndex >= SCALE_RATIOS.length - 1;
     onChange();
   };
-  minus.addEventListener('click', () => { if (state.servings > 1) { state.servings--; update(); } });
-  plus.addEventListener('click',  () => { if (state.servings < 999) { state.servings++; update(); } });
+  minus.addEventListener('click', () => { if (state.ratioIndex > 0) { state.ratioIndex--; update(); } });
+  plus.addEventListener('click',  () => { if (state.ratioIndex < SCALE_RATIOS.length - 1) { state.ratioIndex++; update(); } });
 
   stepper.appendChild(minus);
   stepper.appendChild(valueEl);
@@ -203,7 +234,10 @@ function renderIngredients(host, ingredients, state) {
     host.appendChild(h('p.muted', { style: { padding: 'var(--s-3)' } }, 'No ingredients were found in this recipe.'));
     return;
   }
-  const factor = state.servings / (state.originalServings || 1);
+  // Use the exact ratio multiplier set by renderServingsControl rather than
+  // dividing the (rounded) display servings by the original — otherwise our
+  // ingredient quantities lose precision after rounding the servings label.
+  const factor = state.scaleFactor != null ? state.scaleFactor : (state.servings / (state.originalServings || 1));
   ingredients.forEach((ing, idx) => {
     const parts = renderIngredientParts(ing, factor);
     const item = h('li.ingredient-item', { tabindex: '0', role: 'checkbox', 'aria-checked': state.ingredientDone.has(idx) ? 'true' : 'false' });

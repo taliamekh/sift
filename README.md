@@ -1,22 +1,21 @@
-# Sugar Skip
+# Sift
 
 > Skip the story, get to the recipe.
 
-A pastel-pink baking companion built in one night. Two surfaces share the same
-recipe parser:
+A pastel-pink recipe reader. Two surfaces share one parser:
 
 * **Web app** at `http://localhost:4747` — paste a recipe URL, get a clean
-  reading view, save it to a cookbook with tabs, notes, photos, and your own
-  star rating.
-* **Chrome extension** — click the toolbar icon on any recipe page; the popup
-  pulls the same clean recipe view, runs entirely in your browser (so it
-  bypasses bot protection that blocks server-side fetches).
+  reading view, save it to a cookbook with custom tabs, your own notes,
+  photos, and personal rating. Works for baking, cooking, prep — any
+  recipe site that uses schema.org.
+* **Chrome extension** — click the toolbar icon on any recipe page; the
+  popup shows the same clean recipe view in your browser, so it gets
+  through sites that block server-side scrapers (e.g. AllRecipes).
 
-Designed around the
-[schema.org/Recipe](https://schema.org/Recipe) JSON-LD specification, which
-~95% of major recipe sites embed. Falls back to schema.org microdata and
-then to common WordPress recipe plugin selectors (WP Recipe Maker, Tasty
-Recipes, MV Create) when JSON-LD is missing.
+Designed around the [schema.org/Recipe](https://schema.org/Recipe) JSON-LD
+specification, which ~95% of major recipe sites embed. Falls back to
+schema.org microdata and then to common WordPress recipe plugin selectors
+(WP Recipe Maker, Tasty Recipes, MV Create) when JSON-LD is missing.
 
 ## Tested against
 
@@ -46,8 +45,8 @@ Open <http://localhost:4747> in your browser.
 2. Toggle on **Developer mode** (top right)
 3. Click **Load unpacked**
 4. Pick the `extension/` folder inside this project
-5. Pin Sugar Skip to your toolbar
-6. Click it on any baking recipe page
+5. Pin Sift to your toolbar
+6. Click it on any recipe page
 
 The extension talks to the local web app for the "Save to cookbook" feature,
 but viewing recipes works whether or not the server is running.
@@ -56,32 +55,45 @@ but viewing recipes works whether or not the server is running.
 
 ## Features
 
-### Web app
+### Reading a recipe
 
-* **Paste any recipe URL** — gets parsed server-side. If the site blocks bots,
-  we transparently fall back through `r.jina.ai` so you still get the recipe.
+* **Paste any recipe URL** — parsed server-side. If the site blocks bots,
+  we transparently fall back through `r.jina.ai` so you still get the
+  recipe.
 * **Interactive ingredient checklist** — tap an ingredient to cross it off.
-* **Servings scaler** — adjust serving count and every quantity rescales in
-  real time, snapped back to pretty fractions (`1.5 → 1½`, `0.6667 → ⅔`).
+* **Smart batch scaler** — adjust the recipe by clean ratios (¼×, ⅓×, ½×,
+  ⅔×, ¾×, 1×, 1½×, 2×, 3×, 4×) instead of awkward single-serving steps.
+  Quantities snap back to pretty fractions (`1.5 → 1½`, `0.667 → ⅔`) so
+  you never end up with "1.83 eggs."
 * **Numbered instructions** — tap a step to mark it done.
 * **External star rating** — 5-star visual fill from the recipe site's
   aggregate rating, with review count.
-* **Cookbooks** — make as many as you want; each gets its own color and icon
-  (cupcake, cookie, cake, bread, donut, croissant, pie, bowl, heart, flower).
-* **Tabs** — within a cookbook, organise recipes into custom tabs. Each tab
-  has its own color and optional icon. Double-click a tab to rename or
-  recolor it.
-* **Notes** — per-recipe notes editor, auto-saves as you type.
+
+### Your cookbook
+
+* **Cookbooks** — make as many as you want; each gets its own color and
+  icon from a deep library of cooking iconography (whisk, pot, mixer,
+  rolling pin, knife, oven, kettle, mug, scale, herbs, cupcake, cake,
+  bread, cookie, donut, pie, croissant, salt shaker…).
+* **Book-style view** — cookbooks render as actual book pages with a
+  visible spine and tabs sticking out the right edge like a recipe
+  binder.
+* **Custom tabs** — within a cookbook, organize recipes into tabs. Each
+  tab has its own color and optional icon. The pencil icon on each tab
+  opens the editor; from there you can rename, recolor, or delete.
+* **Notes** — per-recipe notes editor that auto-saves as you type.
 * **Photos** — upload your own bakes to a recipe; stored locally in
   `uploads/`.
-* **Your rating** — 1-5 stars per recipe, independent of the site's rating.
+* **Your rating** — 1-5 stars per recipe, independent of the site's
+  rating.
 * **Print** — clean print stylesheet hides the chrome.
+* **Breadcrumbs everywhere** — you're never trapped on a sub-page.
 
 ### Chrome extension
 
 Same parser, same look, runs in-page. Click "Save to cookbook" to push the
-recipe to your local app (whichever cookbook is first in your list).
-"Open in app" launches the recipe in the full web app.
+recipe to your local app. "Open in app" launches the recipe in the full
+web app.
 
 ---
 
@@ -99,16 +111,13 @@ baking/
 │   │   ├── heuristic.js      ← class-selector fallback
 │   │   ├── duration.js       ← ISO 8601 → minutes
 │   │   └── quantity.js       ← ingredient quantity parser
-│   └── routes/
-│       ├── parse.js          ← POST /api/parse
-│       ├── cookbooks.js      ← cookbook + tab CRUD
-│       └── recipes.js        ← recipe + photo CRUD
+│   └── routes/               ← parse, cookbooks, recipes, photos
 ├── public/                   ← Web app frontend (vanilla JS, no build step)
 │   ├── index.html
 │   ├── styles.css            ← Pastel-pink design system
 │   ├── app.js                ← Router + view dispatcher
 │   ├── lib/                  ← icons, h(), api client, toast, router, modal
-│   ├── components/           ← starRating, recipeView, editors
+│   ├── components/           ← starRating, recipeView, editors, breadcrumb
 │   └── views/                ← home, recipe, cookbook, savedRecipe
 ├── extension/                ← Chrome Manifest V3 extension
 │   ├── manifest.json
@@ -118,37 +127,45 @@ baking/
 ├── scripts/
 │   ├── gen-icons.js          ← sharp-based PNG generation
 │   └── test-parser.js        ← parser harness against the three test URLs
-└── data/                     ← SQLite DB (gitignored)
+├── data/                     ← SQLite DB (gitignored)
 └── uploads/                  ← User photos (gitignored)
 ```
 
 ### Stack notes
 
-* **No build step** for the frontend. ES modules served raw. This keeps the
-  setup teachable and edits feel instant.
+* **No build step** for the frontend. ES modules served raw. Edits feel
+  instant.
 * **better-sqlite3** for storage. Synchronous, fast, no concurrency story
   needed at this scale.
 * **Cheerio** on the server for JSON-LD extraction.
-* **Sharp** at build time to make Chrome extension PNGs from one inline SVG.
+* **Sharp** at build time to make Chrome extension PNGs from one inline
+  SVG.
 * **Fonts** — [Fraunces](https://fonts.google.com/specimen/Fraunces) for
   display (warm, variable-axis serif with optical sizes) and
-  [Quicksand](https://fonts.google.com/specimen/Quicksand) for UI (rounded
-  geometric sans). Loaded from Google Fonts; works offline once cached.
+  [Quicksand](https://fonts.google.com/specimen/Quicksand) for UI
+  (rounded geometric sans). Loaded from Google Fonts; works offline once
+  cached.
 
 ---
 
 ## Notes for the curious
 
-* **The reader-proxy fallback** uses `r.jina.ai` — a free reader service that
-  returns the page HTML, including JSON-LD. It only activates when the direct
-  fetch returns 403/401/429/etc., so for sites that work directly it adds no
-  latency.
+* **Reader-proxy fallback** uses `r.jina.ai` — a free reader service that
+  returns page HTML, including JSON-LD. Only activates on direct fetch
+  failure (403/401/429), so it adds no latency for sites that work
+  directly.
 * **Quantity parser** handles `1 1/2 cups`, `½`, `1½`, `2 to 3 tablespoons`,
-  `(8 oz) package`, ranges, fractions, decimals, and word numbers (`one`,
-  `a pinch`). Renders back to clean fractions where the snap is close
-  enough (within 0.025).
-* **Database resets**: delete `data/sugarskip.db` to start fresh. The server
-  re-seeds a default cookbook on next boot.
-* **Port choice**: 4747 avoids collisions with the usual 3000/5173/8000/8080.
+  `(8 oz) package`, ranges, and word numbers (`one`, `a pinch`). Fractions
+  are parsed before decimals so `3/4 cup` doesn't degrade to "decimal 3
+  with /4 stranded."
+* **Servings scaler uses ratios** rather than ±1 steps. Going from 12 to
+  11 servings creates ugly fractional eggs; going from 12 to ¾× (= 9
+  servings) keeps every ingredient on a clean fraction.
+* **Database resets**: delete `data/sugarskip.db` to start fresh — the
+  filename is the project's old name, kept stable so existing local data
+  survives the rebrand. The server re-seeds a default cookbook on next
+  boot.
+* **Port choice**: 4747 avoids collisions with the usual 3000/5173/8000/
+  8080.
 * **Extension permissions**: `activeTab` and `scripting` only — no
   background scripts, no telemetry.

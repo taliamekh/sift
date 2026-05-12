@@ -1,5 +1,5 @@
 // Browser-native recipe parser for the extension's popup.
-// Lives at window.SugarSkip.parser when loaded as a content script function.
+// Lives at window.Sift.parser when loaded as a content script function.
 
 (function () {
   'use strict';
@@ -287,7 +287,7 @@
       cookMinutes: cookM,
       totalMinutes: totalM,
       ingredients: (recipe.ingredients || []).map(text => {
-        const p = window.SugarSkip.parseIngredient(text);
+        const p = window.Sift.parseIngredient(text);
         return p || { text, quantity: null, unit: null, name: text };
       }),
       instructions: (recipe.instructions || []).map((step, i) => ({
@@ -299,6 +299,6 @@
     };
   }
 
-  window.SugarSkip = window.SugarSkip || {};
-  window.SugarSkip.extractRecipe = extractRecipe;
+  window.Sift = window.Sift || {};
+  window.Sift.extractRecipe = extractRecipe;
 })();

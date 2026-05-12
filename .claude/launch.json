@@ -2,7 +2,7 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "sugar-skip",
+      "name": "sift",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["start"],
       "port": 4747

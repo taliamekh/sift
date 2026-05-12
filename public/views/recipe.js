@@ -2,6 +2,7 @@ import { h, mount } from '../lib/h.js';
 import { icon } from '../lib/icons.js';
 import { api } from '../lib/api.js';
 import { RecipeView } from '../components/recipeView.js';
+import { Breadcrumb } from '../components/breadcrumb.js';
 import { openSaveRecipeFlow } from '../components/editors.js';
 import { navigate } from '../lib/router.js';
 import * as toast from '../lib/toast.js';
@@ -15,6 +16,10 @@ export async function ParsedRecipeView({ url }) {
   try {
     const { recipe } = await api.parseUrl(url);
     mount(root);
+    root.appendChild(Breadcrumb([
+      { label: 'Home', href: '#/', icon: 'home' },
+      { label: recipe.title || 'New recipe' },
+    ]));
     const view = RecipeView(recipe, {
       headerActions: buildHeaderActions(recipe),
     });
