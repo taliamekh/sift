@@ -642,8 +642,14 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
   font-weight: 600;
   font-style: italic;
   letter-spacing: -0.01em;
-  line-height: 1.15;
+  /* Italic Fraunces glyphs ride above the cap-height — at line-height 1.15
+     the -webkit-box clipping box was trimming the top of letters like
+     italic k / l / d / b regardless of word length. 1.35 gives the
+     ascenders enough room, and the small top/bottom padding keeps a 2px
+     gutter inside the line-clamp box so swashes don't kiss the edge. */
+  line-height: 1.35;
   margin: 0;
+  padding: 2px 0 1px;
   text-align: center;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
   color: var(--cover-text, white);
