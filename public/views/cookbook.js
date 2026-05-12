@@ -55,7 +55,10 @@ export async function CookbookView({ id }) {
     }
     // Icon renders on every spine — even image-backed ones — so the user's
     // chosen category glyph is consistent between the home card and detail.
-    spine.innerHTML = icon(state.cookbook.coverIcon || 'cupcake');
+    // 'none' is the explicit no-icon sentinel: blank spine.
+    if (state.cookbook.coverIcon && state.cookbook.coverIcon !== 'none') {
+      spine.innerHTML = icon(state.cookbook.coverIcon);
+    }
     header.appendChild(spine);
 
     const info = h('div.flex-1');

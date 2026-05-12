@@ -140,10 +140,12 @@ function cookbookCard(cb) {
   // The icon fills the remaining vertical space below the label. Renders on
   // every cover — including image covers — so a photo of the user's bakes
   // can still carry a category glyph. Drop-shadow keeps the icon legible
-  // against busy photos.
-  const iconWrap = h('div.cookbook-cover-icon');
-  iconWrap.innerHTML = icon(cb.coverIcon || 'cupcake');
-  content.appendChild(iconWrap);
+  // against busy photos. The sentinel 'none' keeps a clean label-only cover.
+  if (cb.coverIcon && cb.coverIcon !== 'none') {
+    const iconWrap = h('div.cookbook-cover-icon');
+    iconWrap.innerHTML = icon(cb.coverIcon);
+    content.appendChild(iconWrap);
+  }
 
   card.appendChild(content);
 

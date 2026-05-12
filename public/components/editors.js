@@ -90,7 +90,9 @@ export function openCookbookEditor({ cookbook = null, onSave }) {
   const previewBox = h('div.cookbook-spine');
   const previewIcon = h('span', { 'aria-hidden': 'true', style: { display: 'inline-flex' } });
   const refreshPreview = () => {
-    previewIcon.innerHTML = icon(iconName);
+    // "none" is the explicit no-icon sentinel — cleared innerHTML keeps the
+    // preview box uncluttered (label-only cover).
+    previewIcon.innerHTML = iconName === 'none' ? '' : icon(iconName);
     // The .cookbook-spine svg rule resolves its colour from --cover-text,
     // so we set it on the preview box rather than relying on inherited
     // span colour (which the more-specific rule would override).
@@ -228,7 +230,21 @@ export function openCookbookEditor({ cookbook = null, onSave }) {
   // Icon picker — rendered on top of every cover (image or color). Tile
   // background = --preview-cover, glyph = --preview-text, so each option
   // shows what the icon will look like over the actual cookbook colour.
+  // First chip is a "no icon" option so the user can keep a clean
+  // label-only cover (mirrors the tab editor's pattern).
   const iconGrid = h('div.icon-grid');
+  const noneIcon = h('button.icon-pick.icon-pick-preview.icon-pick-none', {
+    type: 'button',
+    'aria-label': 'No icon',
+    title: 'No icon',
+  }, '—');
+  if (iconName === 'none') noneIcon.classList.add('selected');
+  noneIcon.addEventListener('click', () => {
+    iconName = 'none';
+    $$('.icon-pick', iconGrid).forEach(b => b.classList.toggle('selected', b === noneIcon));
+    refreshPreview();
+  });
+  iconGrid.appendChild(noneIcon);
   COOKBOOK_ICONS.forEach(n => {
     const i = h('button.icon-pick.icon-pick-preview', { type: 'button', 'aria-label': n });
     i.innerHTML = icon(n);

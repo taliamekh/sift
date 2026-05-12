@@ -1519,6 +1519,21 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
 .icon-pick.icon-pick-preview:hover { background: var(--preview-cover, var(--pink-100)); filter: brightness(0.95); }
 .icon-pick.icon-pick-preview.selected { border-color: var(--cocoa); box-shadow: var(--shadow-focus); background: var(--preview-cover, var(--pink-100)); }
 
+/* The "no icon" chip is the first tile in the cookbook editor's icon
+   picker. It needs to read as "blank label only" at a glance — a dashed
+   border + a large em-dash is the same pattern used in the tab editor. */
+.icon-pick.icon-pick-none {
+  border-style: dashed;
+  border-color: var(--border-strong);
+  font-size: 1.4rem;
+  line-height: 1;
+  font-weight: 600;
+  color: var(--preview-text, var(--berry));
+}
+.icon-pick.icon-pick-none.selected {
+  border-style: solid;
+}
+
 /* ============================================================== */
 /* TOAST ---------------------------------------------------------- */
 /* ============================================================== */
