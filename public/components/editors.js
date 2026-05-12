@@ -1,0 +1,366 @@
+// Edit modals for cookbooks, tabs, and "save recipe to cookbook" flow.
+import { h, $$, mount } from '../lib/h.js';
+import { icon } from '../lib/icons.js';
+import { openModal, closeModal } from '../lib/modal.js';
+import * as toast from '../lib/toast.js';
+import { api } from '../lib/api.js';
+
+const COOKBOOK_COLORS = [
+  '#F8B4D9', '#FFB6C1', '#F48FB1', '#EC407A',
+  '#FFD8B4', '#FFE0B5', '#FFE9B5', '#FFCAB1',
+  '#D4F0C2', '#B7DEC5', '#A5D6C8', '#B8D8E8',
+  '#C5C2E8', '#D8C7E8', '#E8C7D8', '#C2185B',
+];
+
+const COOKBOOK_ICONS = ['cupcake', 'cookie', 'cake', 'bread', 'donut', 'croissant',
+                        'pie', 'bowl', 'heart', 'flower', 'sparkle', 'whisk'];
+
+const TAB_COLORS = [
+  '#FFD6E8', '#FFC2D6', '#FFB1CC', '#F8A1B6',
+  '#FFE0B5', '#FFD8B4', '#FFE9B5', '#FFCAB1',
+  '#D4F0C2', '#B7DEC5', '#B8D8E8', '#D8C7E8',
+];
+
+// ─── Cookbook editor ───────────────────────────────────────────────────────
+
+export function openCookbookEditor({ cookbook = null, onSave }) {
+  let name = cookbook?.name || '';
+  let color = cookbook?.coverColor || COOKBOOK_COLORS[0];
+  let iconName = cookbook?.coverIcon || 'cupcake';
+  let description = cookbook?.description || '';
+
+  const root = h('div.stack-5');
+  root.appendChild(h('h3', cookbook ? 'Edit cookbook' : 'New cookbook'));
+
+  // Preview
+  const preview = h('div', { style: { display: 'grid', placeItems: 'center', marginBottom: 'var(--s-2)' } });
+  const previewBox = h('div.cookbook-spine');
+  previewBox.style.background = color;
+  previewBox.innerHTML = icon(iconName);
+  preview.appendChild(previewBox);
+  root.appendChild(preview);
+
+  // Name input
+  const nameInput = h('input.input', { type: 'text', placeholder: 'e.g. "Holiday Bakes"', maxlength: 60, value: name });
+  nameInput.addEventListener('input', () => { name = nameInput.value; });
+  root.appendChild(labelled('Name', nameInput));
+
+  // Description
+  const descInput = h('textarea.input', { placeholder: 'Optional — a line about this cookbook', maxlength: 200 }, description);
+  descInput.addEventListener('input', () => { description = descInput.value; });
+  root.appendChild(labelled('Description', descInput));
+
+  // Color picker
+  const swatchGrid = h('div.swatch-grid');
+  COOKBOOK_COLORS.forEach(c => {
+    const s = h('button.swatch', { type: 'button', 'aria-label': `Color ${c}`, style: { background: c } });
+    if (c === color) s.classList.add('selected');
+    s.addEventListener('click', () => {
+      color = c;
+      $$('.swatch', swatchGrid).forEach(b => b.classList.toggle('selected', b === s));
+      previewBox.style.background = c;
+    });
+    swatchGrid.appendChild(s);
+  });
+  root.appendChild(labelled('Cover color', swatchGrid));
+
+  // Icon picker
+  const iconGrid = h('div.icon-grid');
+  COOKBOOK_ICONS.forEach(n => {
+    const i = h('button.icon-pick', { type: 'button', 'aria-label': n });
+    i.innerHTML = icon(n);
+    if (n === iconName) i.classList.add('selected');
+    i.addEventListener('click', () => {
+      iconName = n;
+      $$('.icon-pick', iconGrid).forEach(b => b.classList.toggle('selected', b === i));
+      previewBox.innerHTML = icon(n);
+    });
+    iconGrid.appendChild(i);
+  });
+  root.appendChild(labelled('Icon', iconGrid));
+
+  // Actions
+  const actions = h('div.row');
+  if (cookbook) {
+    const del = h('button.btn.btn-danger.btn-sm', { type: 'button' }, 'Delete');
+    del.innerHTML = `${icon('trash')}<span>Delete cookbook</span>`;
+    del.addEventListener('click', async () => {
+      if (!confirm(`Delete "${cookbook.name}" and everything inside it? This can't be undone.`)) return;
+      try {
+        await api.deleteCookbook(cookbook.id);
+        toast.success('Cookbook deleted');
+        closeModal();
+        onSave?.({ deleted: true });
+      } catch (e) { toast.error(e.message); }
+    });
+    actions.appendChild(del);
+  }
+  actions.appendChild(h('div.spacer'));
+  const cancel = h('button.btn.btn-ghost', { type: 'button', onClick: closeModal }, 'Cancel');
+  actions.appendChild(cancel);
+  const save = h('button.btn.btn-primary', { type: 'button' }, cookbook ? 'Save changes' : 'Create cookbook');
+  save.addEventListener('click', async () => {
+    if (!name.trim()) { toast.error('Cookbook needs a name'); nameInput.focus(); return; }
+    save.disabled = true;
+    try {
+      const payload = { name: name.trim(), coverColor: color, coverIcon: iconName, description: description.trim() || null };
+      const result = cookbook
+        ? await api.updateCookbook(cookbook.id, payload)
+        : await api.createCookbook(payload);
+      toast.success(cookbook ? 'Cookbook updated' : 'Cookbook created');
+      closeModal();
+      onSave?.({ cookbook: result.cookbook });
+    } catch (e) { toast.error(e.message); save.disabled = false; }
+  });
+  actions.appendChild(save);
+  root.appendChild(actions);
+
+  openModal(root);
+  setTimeout(() => nameInput.focus(), 60);
+}
+
+// ─── Tab editor ────────────────────────────────────────────────────────────
+
+export function openTabEditor({ tab = null, cookbookId, onSave }) {
+  let name = tab?.name || '';
+  let color = tab?.color || TAB_COLORS[0];
+  let iconName = tab?.icon || null;
+
+  const root = h('div.stack-5');
+  root.appendChild(h('h3', tab ? 'Edit tab' : 'New tab'));
+
+  // Preview row
+  const preview = h('div.tab', { 'aria-hidden': 'true', style: { background: 'var(--pink-50)' } });
+  const colorDot = h('span.tab-color', { style: { background: color } });
+  const nameSpan = h('span', name || 'Untitled tab');
+  preview.appendChild(colorDot);
+  preview.appendChild(nameSpan);
+  root.appendChild(h('div', { style: { display: 'grid', placeItems: 'center', marginBottom: 'var(--s-1)' } }, preview));
+
+  const nameInput = h('input.input', { type: 'text', placeholder: 'e.g. "Cookies"', maxlength: 40, value: name });
+  nameInput.addEventListener('input', () => { name = nameInput.value; nameSpan.textContent = name || 'Untitled tab'; });
+  root.appendChild(labelled('Name', nameInput));
+
+  // Color picker
+  const swatchGrid = h('div.swatch-grid');
+  TAB_COLORS.forEach(c => {
+    const s = h('button.swatch', { type: 'button', 'aria-label': `Color ${c}`, style: { background: c } });
+    if (c === color) s.classList.add('selected');
+    s.addEventListener('click', () => {
+      color = c;
+      $$('.swatch', swatchGrid).forEach(b => b.classList.toggle('selected', b === s));
+      colorDot.style.background = c;
+    });
+    swatchGrid.appendChild(s);
+  });
+  root.appendChild(labelled('Color', swatchGrid));
+
+  // Icon picker (optional for tabs)
+  const iconGrid = h('div.icon-grid');
+  const noneBtn = h('button.icon-pick', { type: 'button', 'aria-label': 'No icon' }, '—');
+  if (iconName == null) noneBtn.classList.add('selected');
+  noneBtn.addEventListener('click', () => {
+    iconName = null;
+    $$('.icon-pick', iconGrid).forEach(b => b.classList.toggle('selected', b === noneBtn));
+  });
+  iconGrid.appendChild(noneBtn);
+  COOKBOOK_ICONS.forEach(n => {
+    const i = h('button.icon-pick', { type: 'button', 'aria-label': n });
+    i.innerHTML = icon(n);
+    if (n === iconName) i.classList.add('selected');
+    i.addEventListener('click', () => {
+      iconName = n;
+      $$('.icon-pick', iconGrid).forEach(b => b.classList.toggle('selected', b === i));
+    });
+    iconGrid.appendChild(i);
+  });
+  root.appendChild(labelled('Icon (optional)', iconGrid));
+
+  const actions = h('div.row');
+  if (tab) {
+    const del = h('button.btn.btn-danger.btn-sm', { type: 'button' });
+    del.innerHTML = `${icon('trash')}<span>Delete tab</span>`;
+    del.addEventListener('click', async () => {
+      if (!confirm(`Delete tab "${tab.name}"? Its recipes stay in the cookbook but lose their tab.`)) return;
+      try {
+        await api.deleteTab(tab.id);
+        toast.success('Tab deleted');
+        closeModal();
+        onSave?.({ deleted: true });
+      } catch (e) { toast.error(e.message); }
+    });
+    actions.appendChild(del);
+  }
+  actions.appendChild(h('div.spacer'));
+  actions.appendChild(h('button.btn.btn-ghost', { type: 'button', onClick: closeModal }, 'Cancel'));
+  const save = h('button.btn.btn-primary', { type: 'button' }, tab ? 'Save' : 'Create');
+  save.addEventListener('click', async () => {
+    if (!name.trim()) { toast.error('Tab needs a name'); nameInput.focus(); return; }
+    save.disabled = true;
+    try {
+      const payload = { name: name.trim(), color, icon: iconName };
+      const result = tab
+        ? await api.updateTab(tab.id, payload)
+        : await api.createTab(cookbookId, payload);
+      toast.success(tab ? 'Tab updated' : 'Tab created');
+      closeModal();
+      onSave?.({ tab: result.tab });
+    } catch (e) { toast.error(e.message); save.disabled = false; }
+  });
+  actions.appendChild(save);
+  root.appendChild(actions);
+
+  openModal(root);
+  setTimeout(() => nameInput.focus(), 60);
+}
+
+// ─── Save recipe to cookbook ───────────────────────────────────────────────
+
+export async function openSaveRecipeFlow({ recipe, onSave }) {
+  const { cookbooks } = await api.listCookbooks();
+
+  let cookbookId = cookbooks[0]?.id ?? null;
+  let tabId = null;
+  let tabs = [];
+
+  const root = h('div.stack-5');
+  root.appendChild(h('h3', 'Save to cookbook'));
+  root.appendChild(h('p.muted', `"${recipe.title || 'Untitled recipe'}" will be added to your cookbook with all of its ingredients, instructions, and rating.`));
+
+  // Cookbook picker
+  const cookbookSelect = h('select.input');
+  cookbooks.forEach(cb => {
+    const opt = h('option', { value: cb.id }, cb.name);
+    cookbookSelect.appendChild(opt);
+  });
+  const newOpt = h('option', { value: '__new' }, '＋ New cookbook…');
+  cookbookSelect.appendChild(newOpt);
+  if (cookbookId) cookbookSelect.value = String(cookbookId);
+
+  const tabSelect = h('select.input');
+  const tabWrap = labelled('Tab (optional)', tabSelect);
+
+  async function refreshTabs() {
+    tabSelect.innerHTML = '';
+    tabSelect.appendChild(h('option', { value: '' }, '— None —'));
+    if (!cookbookId) { tabWrap.style.display = 'none'; return; }
+    const detail = await api.getCookbook(cookbookId);
+    tabs = detail.tabs || [];
+    tabs.forEach(t => {
+      const opt = h('option', { value: t.id }, t.name);
+      tabSelect.appendChild(opt);
+    });
+    tabSelect.appendChild(h('option', { value: '__new' }, '＋ New tab…'));
+    tabWrap.style.display = tabs.length || true ? '' : 'none';
+    tabId = null;
+    tabSelect.value = '';
+  }
+
+  cookbookSelect.addEventListener('change', async () => {
+    const v = cookbookSelect.value;
+    if (v === '__new') {
+      openCookbookEditor({
+        onSave: async (res) => {
+          if (res?.cookbook) {
+            // Re-fetch to include in list
+            const { cookbooks: refreshed } = await api.listCookbooks();
+            cookbookSelect.innerHTML = '';
+            refreshed.forEach(cb => cookbookSelect.appendChild(h('option', { value: cb.id }, cb.name)));
+            cookbookSelect.appendChild(h('option', { value: '__new' }, '＋ New cookbook…'));
+            cookbookId = res.cookbook.id;
+            cookbookSelect.value = String(cookbookId);
+            await refreshTabs();
+            openSave(); // re-open the save flow (modal was closed by editor)
+          }
+        },
+      });
+      return;
+    }
+    cookbookId = Number(v);
+    await refreshTabs();
+  });
+
+  tabSelect.addEventListener('change', async () => {
+    const v = tabSelect.value;
+    if (v === '__new') {
+      openTabEditor({
+        cookbookId,
+        onSave: async (res) => {
+          if (res?.tab) {
+            tabs.push(res.tab);
+            tabSelect.value = '';
+            const newOption = h('option', { value: res.tab.id }, res.tab.name);
+            tabSelect.insertBefore(newOption, tabSelect.querySelector('option[value="__new"]'));
+            tabSelect.value = String(res.tab.id);
+            tabId = res.tab.id;
+            openSave(); // re-open
+          }
+        },
+      });
+      return;
+    }
+    tabId = v ? Number(v) : null;
+  });
+
+  function openSave() {
+    const actions = h('div.row');
+    actions.appendChild(h('div.spacer'));
+    actions.appendChild(h('button.btn.btn-ghost', { type: 'button', onClick: closeModal }, 'Cancel'));
+    const save = h('button.btn.btn-primary', { type: 'button' });
+    save.innerHTML = `${icon('bookmarkFilled')}<span>Add to cookbook</span>`;
+    save.addEventListener('click', async () => {
+      if (!cookbookId) { toast.error('Pick a cookbook'); return; }
+      save.disabled = true;
+      try {
+        const payload = {
+          cookbookId,
+          tabId,
+          recipe: {
+            sourceUrl: recipe.sourceUrl,
+            title: recipe.title,
+            description: recipe.description,
+            heroImage: recipe.heroImage,
+            author: recipe.author,
+            prepMinutes: recipe.prepMinutes,
+            cookMinutes: recipe.cookMinutes,
+            totalMinutes: recipe.totalMinutes,
+            servings: recipe.servings,
+            yieldText: recipe.yieldText,
+            ingredients: recipe.ingredients,
+            instructions: recipe.instructions,
+            rating: recipe.rating,
+          },
+        };
+        const result = await api.saveRecipe(payload);
+        toast.success('Saved to your cookbook');
+        closeModal();
+        onSave?.(result.recipe);
+      } catch (e) { toast.error(e.message); save.disabled = false; }
+    });
+    actions.appendChild(save);
+
+    const newRoot = h('div.stack-5');
+    newRoot.appendChild(h('h3', 'Save to cookbook'));
+    newRoot.appendChild(h('p.muted', `"${recipe.title || 'Untitled recipe'}" will be added with all of its ingredients, instructions, and rating.`));
+    newRoot.appendChild(labelled('Cookbook', cookbookSelect));
+    newRoot.appendChild(tabWrap);
+    newRoot.appendChild(actions);
+    openModal(newRoot);
+  }
+
+  await refreshTabs();
+  openSave();
+}
+
+// ─── Helpers ───────────────────────────────────────────────────────────────
+
+function labelled(label, control) {
+  return h('label', { style: { display: 'block' } },
+    h('span', { style: {
+      display: 'block', marginBottom: 'var(--s-2)', fontSize: 'var(--step--1)',
+      fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em',
+      color: 'var(--berry)',
+    }}, label),
+    control
+  );
+}

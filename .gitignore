@@ -1,0 +1,13 @@
+node_modules/
+data/
+uploads/
+*.log
+.env
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Claude Code local state — keep launch.json for preview reproducibility
+.claude/settings.local.json
+.claude/worktrees/
