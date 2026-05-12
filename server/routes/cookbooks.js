@@ -61,8 +61,20 @@ router.get('/cookbooks', (req, res) => {
     FROM cookbooks c
     ORDER BY c.position ASC, c.id ASC
   `).all();
+  // Include the cookbook's tabs in the list response so the home page can
+  // render them as little tabs sticking out of each book card.
+  const allTabs = db.prepare('SELECT * FROM tabs ORDER BY cookbook_id, position ASC').all();
+  const tabsByBook = {};
+  for (const t of allTabs) {
+    if (!tabsByBook[t.cookbook_id]) tabsByBook[t.cookbook_id] = [];
+    tabsByBook[t.cookbook_id].push(tabRow(t));
+  }
   res.json({
-    cookbooks: rows.map(r => ({ ...cookbookRow(r), recipeCount: r.recipe_count })),
+    cookbooks: rows.map(r => ({
+      ...cookbookRow(r),
+      recipeCount: r.recipe_count,
+      tabs: tabsByBook[r.id] || [],
+    })),
   });
 });
 

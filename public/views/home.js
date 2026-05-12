@@ -110,8 +110,10 @@ export async function HomeView() {
 
 function cookbookCard(cb) {
   // A cookbook card *looks* like a physical book: spine on the left,
-  // colored cover (or full-bleed image) with the icon and title, page
-  // stack peeking out on the right edge.
+  // colored cover (or full-bleed image) with the icon and a rounded
+  // "label" panel holding the title — the way a school notebook has a
+  // pasted label on the front. Tabs from the cookbook stick out the
+  // right edge like binder dividers.
   const card = h('button.cookbook-card', { type: 'button' });
   card.style.setProperty('--cover', cb.coverColor || '#F8B4D9');
   if (cb.coverImage) {
@@ -127,17 +129,49 @@ function cookbookCard(cb) {
   if (!cb.coverImage) iconWrap.innerHTML = icon(cb.coverIcon || 'cupcake');
   content.appendChild(iconWrap);
 
-  const titleBlock = h('div.cookbook-cover-titleBlock');
-  titleBlock.appendChild(h('h3.cookbook-cover-title', cb.name));
-  if (cb.description) titleBlock.appendChild(h('p.cookbook-cover-desc', cb.description));
+  // The title block lives in a rounded panel that uses the cover color as
+  // its background — keeps text readable on top of any image, and the
+  // cookbook editor's color picker controls this panel.
+  const label = h('div.cookbook-label');
+  label.appendChild(h('h3.cookbook-cover-title', cb.name));
+  if (cb.description) label.appendChild(h('p.cookbook-cover-desc', cb.description));
   const meta = h('div.cookbook-cover-meta');
   meta.innerHTML = `${icon('bookmark')}<span>${cb.recipeCount} recipe${cb.recipeCount === 1 ? '' : 's'}</span>`;
-  titleBlock.appendChild(meta);
-  content.appendChild(titleBlock);
+  label.appendChild(meta);
+  content.appendChild(label);
 
   card.appendChild(content);
+
+  // Tabs sticking out the right edge of the book — small color chips
+  // showing each section name. Capped at 4 so a busy cookbook doesn't
+  // overflow into the neighbouring cell.
+  if (Array.isArray(cb.tabs) && cb.tabs.length) {
+    const tabsWrap = h('div.cookbook-card-tabs', { 'aria-hidden': 'true' });
+    cb.tabs.slice(0, 4).forEach(t => {
+      const tab = h('span.cookbook-card-tab');
+      tab.style.background = t.color;
+      tab.style.color = darken(t.color);
+      tab.textContent = t.name;
+      tabsWrap.appendChild(tab);
+    });
+    if (cb.tabs.length > 4) {
+      tabsWrap.appendChild(h('span.cookbook-card-tab.cookbook-card-tab-more', `+${cb.tabs.length - 4}`));
+    }
+    card.appendChild(tabsWrap);
+  }
+
   card.addEventListener('click', () => navigate(`/cookbook/${cb.id}`));
   return card;
+}
+
+// Returns a darker version of a hex color, used for legible label text on
+// pastel-colored tab chips. Same math as the cookbook detail view.
+function darken(hex) {
+  if (!hex?.startsWith('#') || hex.length !== 7) return 'currentColor';
+  const r = Math.round(parseInt(hex.slice(1, 3), 16) * 0.55);
+  const g = Math.round(parseInt(hex.slice(3, 5), 16) * 0.55);
+  const b = Math.round(parseInt(hex.slice(5, 7), 16) * 0.55);
+  return `rgb(${r}, ${g}, ${b})`;
 }
 
 function recipeCard(r) {
