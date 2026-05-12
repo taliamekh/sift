@@ -36,15 +36,30 @@ const TAB_COLORS = [
   '#D4F0C2', '#B7DEC5', '#B8D8E8', '#D8C7E8',
 ];
 
-// Curated text colours for the cookbook label + icon. Whites/creams read on
-// rich pastels and photos; the dark options read on light pastels and let the
-// label feel printed-on rather than painted-on.
+// Curated text colours for the cookbook label + icon. Three groupings,
+// each tuned to complement a family of COOKBOOK_COLORS:
+//   • lights (white/cream/blush) — read on rich pastels, photo covers,
+//     and the deep-pink #C2185B / #EC407A swatches
+//   • warm darks (rust/mustard/cocoa/berry) — sit naturally on the
+//     peach/cream/yellow row and warm pinks
+//   • cool darks (sage/forest/navy/plum/ink) — pair with the green,
+//     blue, lavender, and purple covers
+// Two rows of six in the editor.
 const COOKBOOK_TEXT_COLORS = [
+  // Lights
   { value: '#FFFFFF', label: 'White' },
   { value: '#FFF4E6', label: 'Cream' },
   { value: '#FFE8F1', label: 'Blush' },
+  // Warm darks
+  { value: '#8C4A2E', label: 'Rust' },
+  { value: '#8C6E2F', label: 'Mustard' },
   { value: '#4A2C3A', label: 'Cocoa' },
+  // Deep pinks → cool darks → near-black
   { value: '#7A1F47', label: 'Berry' },
+  { value: '#5C2E5C', label: 'Plum' },
+  { value: '#2A3A5C', label: 'Navy' },
+  { value: '#4F6B4D', label: 'Sage' },
+  { value: '#2E4A33', label: 'Forest' },
   { value: '#2A1E25', label: 'Ink' },
 ];
 
@@ -183,7 +198,8 @@ export function openCookbookEditor({ cookbook = null, onSave }) {
   // colour (via --preview-cover), so the user sees the actual contrast
   // before committing. Placed above the icon picker so the chosen text
   // colour is also what tints the icon-picker tiles below.
-  const textColorGrid = h('div.swatch-grid');
+  // 6-column grid → 12 chips form a clean 2×6 block.
+  const textColorGrid = h('div.swatch-grid.swatch-grid-text');
   COOKBOOK_TEXT_COLORS.forEach(({ value, label }) => {
     const s = h('button.swatch.swatch-text', {
       type: 'button',

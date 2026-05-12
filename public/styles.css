@@ -1429,6 +1429,11 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
   grid-template-columns: repeat(8, 1fr);
   gap: var(--s-2);
 }
+/* Text-colour grid uses 6 columns so its 12 chips form a clean 2×6 block
+   (the 8-col grid would leave an awkward 8+4 split). */
+.swatch-grid-text {
+  grid-template-columns: repeat(6, 1fr);
+}
 .swatch {
   aspect-ratio: 1;
   border-radius: 50%;
