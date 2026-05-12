@@ -39,17 +39,29 @@ export function openCookbookEditor({ cookbook = null, onSave }) {
   let color = cookbook?.coverColor || COOKBOOK_COLORS[0];
   let iconName = cookbook?.coverIcon || 'cupcake';
   let description = cookbook?.description || '';
+  let coverImage = cookbook?.coverImage || null;
 
   const root = h('div.stack-5');
   root.appendChild(h('h3', cookbook ? 'Edit cookbook' : 'New cookbook'));
 
-  // Preview
+  // Preview — when a cover image is set, it takes precedence over color/icon
   const preview = h('div', { style: { display: 'grid', placeItems: 'center', marginBottom: 'var(--s-2)' } });
   const previewBox = h('div.cookbook-spine');
-  previewBox.style.background = color;
-  previewBox.innerHTML = icon(iconName);
+  const previewIcon = h('span', { 'aria-hidden': 'true', style: { display: 'inline-flex' } });
+  const refreshPreview = () => {
+    if (coverImage) {
+      previewBox.style.background = `center/cover no-repeat url(${JSON.stringify(coverImage)})`;
+      previewIcon.style.display = 'none';
+    } else {
+      previewBox.style.background = color;
+      previewIcon.style.display = '';
+      previewIcon.innerHTML = icon(iconName);
+    }
+  };
+  previewBox.appendChild(previewIcon);
   preview.appendChild(previewBox);
   root.appendChild(preview);
+  refreshPreview();
 
   // Name input
   const nameInput = h('input.input', { type: 'text', placeholder: 'e.g. "Holiday Bakes"', maxlength: 60, value: name });
@@ -61,6 +73,69 @@ export function openCookbookEditor({ cookbook = null, onSave }) {
   descInput.addEventListener('input', () => { description = descInput.value; });
   root.appendChild(labelled('Description', descInput));
 
+  // Cover image picker — presets + (when editing an existing cookbook)
+  // an upload button. Selecting any preset overrides the color/icon look.
+  const coverGrid = h('div.cover-presets-grid');
+  const noneTile = h('button.cover-preset.cover-preset-none', { type: 'button', 'aria-label': 'No image (use color)' });
+  noneTile.innerHTML = `<span>No image</span>`;
+  noneTile.addEventListener('click', () => {
+    coverImage = null;
+    $$('.cover-preset', coverGrid).forEach(b => b.classList.toggle('selected', b === noneTile));
+    refreshPreview();
+  });
+  if (!coverImage) noneTile.classList.add('selected');
+  coverGrid.appendChild(noneTile);
+
+  // Lazily fetch presets so old saved coverImages still highlight correctly
+  api.listCoverPresets().then(({ presets }) => {
+    (presets || []).forEach(p => {
+      const tile = h('button.cover-preset', { type: 'button', 'aria-label': `Use cover ${p.name}` });
+      tile.style.backgroundImage = `url(${JSON.stringify(p.url)})`;
+      if (coverImage === p.url) tile.classList.add('selected');
+      tile.addEventListener('click', () => {
+        coverImage = p.url;
+        $$('.cover-preset', coverGrid).forEach(b => b.classList.toggle('selected', b === tile));
+        refreshPreview();
+      });
+      coverGrid.appendChild(tile);
+    });
+    // Show the previously-uploaded custom cover as a selectable tile too
+    if (coverImage && coverImage.startsWith('/uploads/') && !coverGrid.querySelector('.cover-preset.selected:not(.cover-preset-none)')) {
+      const customTile = h('button.cover-preset.selected', { type: 'button', 'aria-label': 'Uploaded cover' });
+      customTile.style.backgroundImage = `url(${JSON.stringify(coverImage)})`;
+      coverGrid.appendChild(customTile);
+    }
+  }).catch(() => { /* leave grid as just the "No image" tile */ });
+
+  const coverSection = labelled('Cover image', coverGrid);
+  if (cookbook) {
+    const uploadBtn = h('label.cover-upload-btn', { tabindex: '0' });
+    uploadBtn.innerHTML = `${icon('camera')}<span>Upload your own…</span>`;
+    const fileInput = h('input', { type: 'file', accept: 'image/*', hidden: '' });
+    uploadBtn.appendChild(fileInput);
+    fileInput.addEventListener('change', async () => {
+      if (!fileInput.files?.length) return;
+      try {
+        const { url, cookbook: updated } = await api.uploadCoverImage(cookbook.id, fileInput.files[0]);
+        coverImage = url;
+        refreshPreview();
+        toast.success('Cover uploaded');
+        // Add to grid and select it
+        $$('.cover-preset', coverGrid).forEach(b => b.classList.remove('selected'));
+        const newTile = h('button.cover-preset.selected', { type: 'button', 'aria-label': 'Uploaded cover' });
+        newTile.style.backgroundImage = `url(${JSON.stringify(url)})`;
+        coverGrid.appendChild(newTile);
+        // Surface the saved cookbook data to the parent so card refreshes
+        if (updated) cookbook.coverImage = url;
+      } catch (e) { toast.error(e.message); }
+    });
+    coverSection.appendChild(uploadBtn);
+  } else {
+    coverSection.appendChild(h('p.cover-upload-hint',
+      'Upload custom covers after creating the cookbook (or drop image files into public/assets/covers/ to share them across all cookbooks).'));
+  }
+  root.appendChild(coverSection);
+
   // Color picker
   const swatchGrid = h('div.swatch-grid');
   COOKBOOK_COLORS.forEach(c => {
@@ -69,11 +144,11 @@ export function openCookbookEditor({ cookbook = null, onSave }) {
     s.addEventListener('click', () => {
       color = c;
       $$('.swatch', swatchGrid).forEach(b => b.classList.toggle('selected', b === s));
-      previewBox.style.background = c;
+      refreshPreview();
     });
     swatchGrid.appendChild(s);
   });
-  root.appendChild(labelled('Cover color', swatchGrid));
+  root.appendChild(labelled('Cover color (when no image is selected)', swatchGrid));
 
   // Icon picker
   const iconGrid = h('div.icon-grid');
@@ -84,11 +159,11 @@ export function openCookbookEditor({ cookbook = null, onSave }) {
     i.addEventListener('click', () => {
       iconName = n;
       $$('.icon-pick', iconGrid).forEach(b => b.classList.toggle('selected', b === i));
-      previewBox.innerHTML = icon(n);
+      refreshPreview();
     });
     iconGrid.appendChild(i);
   });
-  root.appendChild(labelled('Icon', iconGrid));
+  root.appendChild(labelled('Icon (when no image is selected)', iconGrid));
 
   // Actions
   const actions = h('div.row');
@@ -114,7 +189,13 @@ export function openCookbookEditor({ cookbook = null, onSave }) {
     if (!name.trim()) { toast.error('Cookbook needs a name'); nameInput.focus(); return; }
     save.disabled = true;
     try {
-      const payload = { name: name.trim(), coverColor: color, coverIcon: iconName, description: description.trim() || null };
+      const payload = {
+        name: name.trim(),
+        coverColor: color,
+        coverIcon: iconName,
+        coverImage,
+        description: description.trim() || null,
+      };
       const result = cookbook
         ? await api.updateCookbook(cookbook.id, payload)
         : await api.createCookbook(payload);

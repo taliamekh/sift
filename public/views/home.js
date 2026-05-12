@@ -115,15 +115,21 @@ export async function HomeView() {
 
 function cookbookCard(cb) {
   // A cookbook card *looks* like a physical book: spine on the left,
-  // colored cover with the icon and title, page stack peeking out on
-  // the right edge.
+  // colored cover (or full-bleed image) with the icon and title, page
+  // stack peeking out on the right edge.
   const card = h('button.cookbook-card', { type: 'button' });
   card.style.setProperty('--cover', cb.coverColor || '#F8B4D9');
+  if (cb.coverImage) {
+    card.setAttribute('data-cover', 'image');
+    card.style.setProperty('--cover-image', `url(${JSON.stringify(cb.coverImage)})`);
+  } else {
+    card.setAttribute('data-cover', 'color');
+  }
 
   const content = h('div.cookbook-cover-content');
 
   const iconWrap = h('div.cookbook-cover-icon');
-  iconWrap.innerHTML = icon(cb.coverIcon || 'cupcake');
+  if (!cb.coverImage) iconWrap.innerHTML = icon(cb.coverIcon || 'cupcake');
   content.appendChild(iconWrap);
 
   const titleBlock = h('div.cookbook-cover-titleBlock');

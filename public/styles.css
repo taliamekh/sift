@@ -567,6 +567,23 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
     0 18px 30px -12px rgba(74, 44, 58, 0.36),
     0 6px 12px rgba(74, 44, 58, 0.14);
 }
+
+/* Image-backed cookbook covers: full-bleed image with a legibility overlay
+   layered on top so the title stays readable on any photo. */
+.cookbook-card[data-cover="image"] {
+  background-color: #2a1e25;
+  background-image:
+    linear-gradient(180deg,
+      rgba(0, 0, 0, 0.05) 0%,
+      transparent 30%,
+      rgba(0, 0, 0, 0.30) 65%,
+      rgba(0, 0, 0, 0.60) 100%),
+    var(--cover-image, none);
+  background-size: 100% 100%, cover;
+  background-position: 0 0, center;
+  background-repeat: no-repeat, no-repeat;
+}
+.cookbook-card[data-cover="image"] .cookbook-cover-icon { display: none; }
 .cookbook-cover-content {
   position: relative;
   height: 100%;
@@ -1011,6 +1028,8 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
   position: relative;
 }
 .cookbook-spine svg { width: 54px; height: 54px; color: white; }
+.cookbook-spine[data-cover="image"] { background-size: cover; background-position: center; }
+.cookbook-spine[data-cover="image"]::after { display: none; }
 .cookbook-spine::after {
   content: "";
   position: absolute;
@@ -1237,6 +1256,66 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
 
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes pop { from { opacity: 0; transform: scale(0.96) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+
+/* Cookbook cover image presets in the editor */
+.cover-presets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(86px, 1fr));
+  gap: var(--s-2);
+}
+.cover-preset {
+  aspect-ratio: 5/7;
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background-color: var(--pink-50);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  cursor: pointer;
+  transition: transform var(--dur-quick), box-shadow var(--dur-quick), border-color var(--dur-quick);
+  position: relative;
+  overflow: hidden;
+}
+.cover-preset:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(74, 44, 58, 0.16); }
+.cover-preset.selected {
+  border-color: var(--pink-400);
+  box-shadow: 0 4px 12px rgba(255, 143, 181, 0.30), 0 0 0 3px rgba(255, 143, 181, 0.18);
+}
+.cover-preset-none {
+  background: repeating-linear-gradient(45deg,
+    var(--pink-50) 0 8px, var(--pink-100) 8px 16px);
+  display: grid;
+  place-items: center;
+  font-size: var(--step--1);
+  font-weight: 600;
+  color: var(--cocoa-muted);
+}
+.cover-preset-none.selected { color: var(--berry); }
+
+.cover-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: 8px 14px;
+  margin-top: var(--s-3);
+  border-radius: var(--r-pill);
+  background: var(--pink-100);
+  color: var(--berry);
+  font-weight: 600;
+  font-size: var(--step--1);
+  cursor: pointer;
+  transition: background var(--dur-quick);
+  width: fit-content;
+}
+.cover-upload-btn:hover { background: var(--pink-200); }
+.cover-upload-btn svg { width: 16px; height: 16px; }
+.cover-upload-hint {
+  margin-top: var(--s-3);
+  font-size: 11.5px;
+  color: var(--cocoa-muted);
+  font-style: italic;
+  line-height: 1.4;
+}
 
 /* Color picker swatches */
 .swatch-grid {

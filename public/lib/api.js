@@ -30,6 +30,18 @@ export const api = {
   createCookbook: (data) => request('POST',   '/cookbooks', data),
   updateCookbook: (id, data) => request('PATCH',  `/cookbooks/${id}`, data),
   deleteCookbook: (id) => request('DELETE', `/cookbooks/${id}`),
+  listCoverPresets: () => request('GET', '/cover-presets'),
+  uploadCoverImage: async (cookbookId, file) => {
+    const form = new FormData();
+    form.append('cover', file);
+    const res = await fetch(`/api/cookbooks/${cookbookId}/cover-image`, { method: 'POST', body: form });
+    if (!res.ok) {
+      let msg = res.statusText;
+      try { const j = await res.json(); if (j?.error) msg = j.error; } catch {}
+      const err = new Error(msg); err.status = res.status; throw err;
+    }
+    return res.json();
+  },
 
   // Tabs
   createTab:   (cookbookId, data) => request('POST',   `/cookbooks/${cookbookId}/tabs`, data),

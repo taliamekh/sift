@@ -21,6 +21,7 @@ db.exec(`
     name          TEXT NOT NULL,
     cover_color   TEXT NOT NULL DEFAULT '#F8B4D9',
     cover_icon    TEXT NOT NULL DEFAULT 'cupcake',
+    cover_image   TEXT,
     description   TEXT,
     position      INTEGER NOT NULL DEFAULT 0,
     created_at    INTEGER NOT NULL,
@@ -74,6 +75,17 @@ db.exec(`
   );
   CREATE INDEX IF NOT EXISTS photos_recipe_idx ON recipe_photos(recipe_id, position);
 `);
+
+// One-time migration — older DBs didn't have cookbooks.cover_image. SQLite
+// ADD COLUMN is idempotent only if we check first, so we read pragma info
+// before issuing the ALTER.
+(() => {
+  const cols = db.prepare('PRAGMA table_info(cookbooks)').all().map(c => c.name);
+  if (!cols.includes('cover_image')) {
+    db.exec('ALTER TABLE cookbooks ADD COLUMN cover_image TEXT');
+    console.log('[migration] added cookbooks.cover_image');
+  }
+})();
 
 // One-time migration — earlier versions of the ingredient parser regex
 // matched "3/4" as decimal-3 with a stranded "/4" in the rest, and "(8oz)"
