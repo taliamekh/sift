@@ -447,6 +447,31 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
 .paste-card .input-icon-glyph { left: 20px; width: 20px; height: 20px; }
 .paste-card .btn { padding-left: 1.6em; padding-right: 1.6em; }
 
+/* Title row puts the cupcake decoration inline with the h1, on its right,
+   so it reads as part of the title block rather than a corner accent. */
+.hero-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(var(--s-3), 2vw, var(--s-5));
+  flex-wrap: wrap;
+}
+.hero-title-cupcake {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: clamp(64px, 9vw, 110px);
+  height: clamp(64px, 9vw, 110px);
+  flex-shrink: 0;
+  color: var(--pink-400);
+  filter: drop-shadow(0 6px 14px rgba(187, 91, 130, 0.20));
+  animation: float 6s ease-in-out infinite;
+  --rot: 8deg;
+}
+.hero-title-cupcake svg { width: 100%; height: 100%; }
+
+/* Legacy floating decoration positions retained for any view that still
+   declares .hero-decor children — the home page doesn't anymore. */
 .hero-decor {
   position: absolute;
   pointer-events: none;
@@ -455,11 +480,6 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
   animation: float 6s ease-in-out infinite;
   filter: drop-shadow(0 6px 12px rgba(187, 91, 130, 0.16));
 }
-.hero-decor.left  { top: 24px; left: 5%; width: 84px; --rot: -14deg; }
-.hero-decor.right { bottom: 12px; right: 4%; width: 96px; --rot: 12deg; animation-delay: -2s; animation-duration: 7s; }
-.hero-decor.extra-top { top: 80px; right: 18%; width: 44px; --rot: 8deg; color: var(--pink-400); opacity: 0.6; animation-delay: -1.4s; animation-duration: 5s; }
-.hero-decor.extra-bot { bottom: 40px; left: 20%; width: 40px; --rot: -22deg; color: var(--berry); opacity: 0.55; animation-delay: -3.6s; animation-duration: 8s; }
-.hero-decor.extra-mid { top: 50%; left: 12%; width: 36px; --rot: 25deg; color: var(--gold); opacity: 0.5; animation-delay: -5s; animation-duration: 9s; }
 @keyframes float {
   0%, 100% { transform: translateY(0) rotate(var(--rot, 0deg)); }
   50%      { transform: translateY(-10px) rotate(var(--rot, 0deg)); }
@@ -1546,14 +1566,38 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
 .breadcrumb-current { color: var(--cocoa); padding: 0 var(--s-2); }
 
 /* ============================================================== */
-/* SERVINGS SUB LABEL --------------------------------------------- */
+/* SERVINGS MULTIPLIER BADGE -------------------------------------- */
 /* ============================================================== */
 
-.servings-sub {
-  font-size: 10.5px;
+.servings-label-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s-2);
+}
+.servings-multiplier-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: var(--r-pill);
+  background: var(--pink-100);
+  color: var(--berry);
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: var(--step-1);
   font-weight: 600;
-  color: var(--cocoa-muted);
-  letter-spacing: 0.04em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  transition: background var(--dur-quick), color var(--dur-quick), transform var(--dur-quick);
+}
+/* When the recipe has been scaled away from 1×, kick the badge into a more
+   saturated pink so it's obvious the displayed quantities aren't the
+   recipe's original batch size. */
+.servings-multiplier-badge.is-scaled {
+  background: linear-gradient(135deg, var(--pink-400), var(--pink-500));
+  color: white;
+  box-shadow: 0 3px 10px rgba(255, 143, 181, 0.40);
+  transform: translateY(-1px);
 }
 
 /* ============================================================== */
@@ -1747,13 +1791,187 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
   .cookbook-tab[aria-selected="true"]::before { display: none; }
 }
 
-/* Print: clean recipe card */
+/* ============================================================== */
+/* PRINT ---------------------------------------------------------- */
+/* ============================================================== */
+
+/* @page margin overrides the browser's default page margins, which is the
+   only reliable way to suppress the auto-injected URL/date footer that
+   most browsers add when printing. */
+@page {
+  size: letter;
+  margin: 0.5in 0.6in;
+}
+
 @media print {
-  .topbar, .recipe-actions, .photo-upload, .modal-backdrop,
-  .breadcrumb, .cookbook-tabs { display: none !important; }
-  body { background: white; }
-  .recipe-layout { grid-template-columns: 1fr; }
-  .card, .ingredients-card { box-shadow: none; border: 1px solid #ddd; }
-  .cookbook-book { padding-right: 0; }
-  .cookbook-page { box-shadow: none; border: 1px solid #ddd; }
+  /* Reset: kill animations, shadows, decorative backgrounds */
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+  body {
+    background: white !important;
+    color: #1d1418 !important;
+    font-family: Georgia, 'Iowan Old Style', serif;
+    font-size: 10.5pt;
+    line-height: 1.42;
+  }
+  body::before, body::after { display: none !important; }
+
+  /* Strip all UI chrome */
+  .topbar, .breadcrumb, .recipe-actions, .photo-upload, .photo-gallery,
+  .modal-backdrop, .cookbook-tabs, .hero-decor, .hero-title-cupcake,
+  .star-input, .notes-area,
+  .servings-control .stepper, .editable-title::after,
+  .recipe-card-tab, .proxy-note { display: none !important; }
+
+  /* Container — use the page fully */
+  .container { max-width: none !important; padding: 0 !important; }
+
+  /* Recipe layout — single column for clean flow */
+  .recipe-layout { display: block !important; gap: 0 !important; }
+  .recipe-left, .recipe-right { width: 100% !important; max-width: none !important; }
+
+  /* Title block */
+  .recipe-header { margin: 0 0 10pt !important; }
+  .recipe-header .eyebrow { display: none !important; }
+  .recipe-header h1 {
+    font-size: 22pt !important;
+    font-style: italic;
+    font-weight: 600;
+    color: #1d1418 !important;
+    margin: 0 0 4pt !important;
+    padding: 0 !important;
+    line-height: 1.15 !important;
+    background: none !important;
+    -webkit-text-fill-color: currentColor !important;
+  }
+  .recipe-header h1 em { color: #1d1418 !important; }
+
+  /* Compact meta strip */
+  .recipe-meta {
+    background: white !important;
+    border-radius: 0 !important;
+    border: none !important;
+    border-bottom: 1px solid #aaa;
+    padding: 0 0 6pt !important;
+    gap: 18pt !important;
+    margin: 0 0 10pt !important;
+  }
+  .recipe-meta-item { gap: 1pt !important; }
+  .recipe-meta-item .label { font-size: 7pt !important; color: #666 !important; letter-spacing: 0.08em; }
+  .recipe-meta-item .value { font-size: 10pt !important; font-family: Georgia, serif !important; }
+
+  /* Drop the hero image entirely — saves a whole page on long recipes */
+  .hero-image { display: none !important; }
+
+  /* Servings shows as a static value (stepper hidden above) */
+  .servings-control {
+    background: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 0 8pt !important;
+  }
+  .servings-multiplier-badge {
+    background: none !important;
+    color: #1d1418 !important;
+    padding: 0 !important;
+    font-size: 9pt !important;
+  }
+
+  /* Section titles */
+  .section-title {
+    font-size: 13pt !important;
+    font-style: italic;
+    color: #1d1418 !important;
+    margin: 8pt 0 4pt !important;
+    padding-bottom: 2pt !important;
+    border-bottom: 1.5pt solid #B23A6D;
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+  .section-title::after { display: none !important; }
+
+  /* Ingredients — two columns to use the page width efficiently */
+  .ingredients-card {
+    background: white !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 0 10pt !important;
+  }
+  .ingredient-list {
+    column-count: 2;
+    column-gap: 22pt;
+    column-fill: balance;
+  }
+  .ingredient-item {
+    padding: 1pt 0 !important;
+    margin: 0 !important;
+    background: none !important;
+    border: none !important;
+    break-inside: avoid;
+  }
+  .ingredient-check { display: none !important; }
+  .ingredient-text { font-size: 9.5pt !important; line-height: 1.35 !important; }
+  .ingredient-text .qty { color: #B23A6D !important; font-weight: 700; }
+  .ingredient-text .unit { color: #555 !important; }
+  .ing-note { font-size: 8.5pt !important; opacity: 0.75; margin-top: 1pt !important; }
+  .ing-note-arrow { display: none !important; }
+  .ing-note::before { content: "— "; color: #888; }
+  .ing-note em { color: #555 !important; }
+
+  /* Instructions — flow steps tightly, never split a step across pages */
+  .recipe-instructions { margin-top: 4pt; }
+  .instructions { gap: 5pt !important; }
+  .instruction-section {
+    font-size: 11pt !important;
+    color: #B23A6D !important;
+    margin: 8pt 0 3pt !important;
+    padding: 0 !important;
+    background: none !important;
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+  .instruction-section::before { display: none !important; }
+  .instruction {
+    padding: 0 !important;
+    border: none !important;
+    background: none !important;
+    align-items: baseline !important;
+    gap: 6pt !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  .instruction .step-num {
+    background: none !important;
+    color: #B23A6D !important;
+    width: auto !important;
+    height: auto !important;
+    font-family: Georgia, serif !important;
+    font-size: 10pt !important;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .instruction .step-num::after { content: "."; }
+  .instruction .step-text {
+    font-size: 10pt !important;
+    padding: 0 !important;
+    line-height: 1.42 !important;
+  }
+
+  /* Source link at the bottom — small, monochrome */
+  .source-link {
+    font-size: 8pt !important;
+    color: #777 !important;
+    display: inline-flex;
+    margin-top: 6pt;
+  }
+  .source-link svg { display: none !important; }
+
+  /* Cookbook view shouldn't bleed its book-shaped chrome onto a printout */
+  .cookbook-book { padding-right: 0 !important; }
+  .cookbook-page { box-shadow: none !important; border: 1px solid #ccc !important; background: white !important; }
+  .editable-title { background: none !important; }
 }

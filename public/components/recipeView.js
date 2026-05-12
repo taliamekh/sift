@@ -211,10 +211,9 @@ function renderServingsControl(state, onChange, yieldText) {
   state.scaleFactor = 1;
 
   const wrap = h('div.servings-control');
-  const labelCol = h('div', { style: { display: 'flex', flexDirection: 'column', gap: '2px' } },
-    h('span.label', 'Makes'),
-    h('span.servings-sub', '× 1 of the recipe'),
-  );
+  const labelCol = h('div.servings-label-col');
+  labelCol.appendChild(h('span.label', 'Makes'));
+  labelCol.appendChild(h('span.servings-multiplier-badge', '× 1'));
   wrap.appendChild(labelCol);
 
   const stepper = h('div.stepper');
@@ -224,14 +223,17 @@ function renderServingsControl(state, onChange, yieldText) {
   const plus = h('button', { 'aria-label': 'Larger batch', type: 'button' });
   plus.innerHTML = icon('plus');
 
-  const subEl = labelCol.querySelector('.servings-sub');
+  const badge = labelCol.querySelector('.servings-multiplier-badge');
 
   const update = () => {
     const ratio = SCALE_RATIOS[state.ratioIndex];
     state.scaleFactor = ratio.mul;
     state.servings = Math.max(1, Math.round((state.originalServings || 1) * ratio.mul));
     valueEl.textContent = String(state.servings);
-    subEl.textContent = `× ${ratio.label} of the recipe`;
+    badge.textContent = `× ${ratio.label}`;
+    // Highlight when the recipe has been scaled away from the original 1× so
+    // users notice they're working with an adjusted batch.
+    badge.classList.toggle('is-scaled', ratio.mul !== 1);
     minus.disabled = state.ratioIndex <= 0;
     plus.disabled = state.ratioIndex >= SCALE_RATIOS.length - 1;
     onChange();

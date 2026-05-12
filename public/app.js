@@ -7,9 +7,9 @@ import { HomeView } from './views/home.js';
 import { ParsedRecipeView } from './views/recipe.js';
 import { CookbookView } from './views/cookbook.js';
 import { SavedRecipeView } from './views/savedRecipe.js';
-// Inject the brand mark SVG into the topbar
+// Inject the brand mark SVG into the topbar — chef hat to match the favicon
 const brandMark = $('.brand-mark');
-if (brandMark) brandMark.innerHTML = icon('whisk');
+if (brandMark) brandMark.innerHTML = icon('chefHat');
 
 const app = $('#app');
 

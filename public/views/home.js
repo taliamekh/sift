@@ -10,13 +10,19 @@ import { getRecentlyViewed } from '../lib/recentlyViewed.js';
 export async function HomeView() {
   const root = h('div.container.stack-7');
 
-  // Hero — single decorative cupcake (per user preference), gently floating
+  // Hero — title and decorative cupcake sit side-by-side in a flex row so
+  // the cupcake reads as "of the title" rather than floating loose in the corner.
   const hero = h('section.hero');
-  hero.innerHTML += `<div class="hero-decor right">${icon('cupcake')}</div>`;
 
+  const titleRow = h('div.hero-title-row');
   const title = h('h1');
   title.innerHTML = `Skip the story, <em>get to the recipe</em>.`;
-  hero.appendChild(title);
+  titleRow.appendChild(title);
+  const cupcake = h('span.hero-title-cupcake', { 'aria-hidden': 'true' });
+  cupcake.innerHTML = icon('cupcake');
+  titleRow.appendChild(cupcake);
+  hero.appendChild(titleRow);
+
   hero.appendChild(h('p.lead', 'Paste any recipe URL. We sift through and hand you the ingredients, instructions, and ratings so you can get cooking straight away. Save anything worth keeping to a cookbook of your own.'));
 
   // Paste card
