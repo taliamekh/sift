@@ -95,11 +95,56 @@ body {
   line-height: 1.55;
   color: var(--text);
   background: var(--bg);
-  background-image:
-    radial-gradient(ellipse 80% 50% at 50% -10%, var(--pink-100), transparent 70%),
-    radial-gradient(ellipse 60% 40% at 100% 100%, var(--pink-50), transparent 70%);
-  background-attachment: fixed;
   min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Layer 1: soft aurora-style blobs in pink + cream that drift slowly.
+   Fixed to the viewport so they don't scroll, behind everything. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: -10vmin;  /* extra room so the drift animation never reveals edges */
+  pointer-events: none;
+  z-index: -2;
+  background-image:
+    radial-gradient(ellipse 38% 44% at 14% 18%, rgba(255, 143, 181, 0.42), transparent 64%),
+    radial-gradient(ellipse 46% 38% at 86% 78%, rgba(255, 200, 215, 0.45), transparent 68%),
+    radial-gradient(ellipse 30% 30% at 72% 22%, rgba(255, 229, 180, 0.38), transparent 65%),
+    radial-gradient(ellipse 34% 28% at 28% 80%, rgba(232, 199, 230, 0.36), transparent 60%),
+    radial-gradient(ellipse 22% 18% at 50% 52%, rgba(183, 222, 197, 0.22), transparent 60%);
+  filter: blur(8px);
+  animation: bgAurora 24s ease-in-out infinite alternate;
+}
+
+/* Layer 2: a faint paper-grain dot pattern, multiplied onto everything.
+   Adds a tactile texture so the page never feels flat. */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  background-image:
+    radial-gradient(circle at 25% 30%, rgba(74, 44, 58, 0.05) 1px, transparent 1.6px),
+    radial-gradient(circle at 75% 70%, rgba(74, 44, 58, 0.04) 1px, transparent 1.6px),
+    radial-gradient(circle at 50% 50%, rgba(187, 91, 130, 0.04) 0.8px, transparent 1.4px);
+  background-size: 24px 24px, 28px 28px, 18px 18px;
+  background-position: 0 0, 12px 12px, 6px 4px;
+  opacity: 0.7;
+  mix-blend-mode: multiply;
+}
+
+@keyframes bgAurora {
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  33%  { transform: translate3d(40px, -28px, 0) scale(1.05); }
+  66%  { transform: translate3d(-32px, 22px, 0) scale(0.97); }
+  100% { transform: translate3d(18px, 12px, 0) scale(1.02); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body::before { animation: none; }
 }
 
 h1, h2, h3, h4, h5 {
@@ -819,12 +864,20 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
   border-color: var(--pink-400);
 }
 .ingredient-item.done .ingredient-check svg { opacity: 1; transform: scale(1); }
-.ingredient-text { line-height: 1.5; transition: color var(--dur-quick), text-decoration-color var(--dur-quick); display: flex; flex-direction: column; align-items: flex-start; }
-.ingredient-text > .qty,
-.ingredient-text > .unit,
-.ingredient-text > br { display: inline; }
-.ingredient-text .qty { font-weight: 700; color: var(--berry); font-variant-numeric: tabular-nums; }
-.ingredient-text .unit { color: var(--cocoa-muted); }
+/* Inline-flow the qty/unit/name on a single line; the note (.ing-note,
+   below) is the only block-level child and drops onto its own line. */
+.ingredient-text {
+  line-height: 1.5;
+  display: block;
+  transition: color var(--dur-quick), text-decoration-color var(--dur-quick);
+}
+.ingredient-text .qty {
+  font-weight: 700;
+  color: var(--berry);
+  font-variant-numeric: tabular-nums;
+  margin-right: 4px;
+}
+.ingredient-text .unit { color: var(--cocoa-muted); margin-right: 4px; }
 .ingredient-item.done .ingredient-text {
   text-decoration: line-through;
   text-decoration-color: var(--pink-300);

@@ -9,19 +9,15 @@ import { StarRating } from '../components/starRating.js';
 export async function HomeView() {
   const root = h('div.container.stack-7');
 
-  // Hero — multiple decorative icons floating, each on its own delay
+  // Hero — single decorative cupcake (per user preference), gently floating
   const hero = h('section.hero');
-  hero.innerHTML += `<div class="hero-decor left">${icon('whisk')}</div>`;
   hero.innerHTML += `<div class="hero-decor right">${icon('cupcake')}</div>`;
-  hero.innerHTML += `<div class="hero-decor extra-top">${icon('sparkle')}</div>`;
-  hero.innerHTML += `<div class="hero-decor extra-bot">${icon('heart')}</div>`;
-  hero.innerHTML += `<div class="hero-decor extra-mid">${icon('flower')}</div>`;
 
   hero.appendChild(h('span.eyebrow', '✦ Skip the story, get to the recipe ✦'));
   const title = h('h1');
   title.innerHTML = `Just the <em>recipe</em>. Hold the memoir.`;
   hero.appendChild(title);
-  hero.appendChild(h('p.lead', 'Paste any recipe URL and we’ll pull out exactly what you need — ingredients, instructions, ratings — and let you save it to a cookbook of your own.'));
+  hero.appendChild(h('p.lead', 'Paste any recipe URL — we sift through and hand you the ingredients, instructions, and ratings so you can get cooking straight away. Save anything worth keeping to a cookbook of your own.'));
 
   // Paste card
   const pasteCard = h('div.paste-card');
@@ -38,7 +34,7 @@ export async function HomeView() {
   const input = h('input.input', {
     type: 'url',
     name: 'url',
-    placeholder: 'Paste a recipe URL — https://...',
+    placeholder: 'Paste a recipe URL to get started',
     autocomplete: 'off',
     'aria-label': 'Recipe URL',
     autofocus: '',
@@ -62,10 +58,7 @@ export async function HomeView() {
   // way to add — no separate button in the section header).
   const cookbooksSection = h('section');
   const head = h('div.section-head');
-  head.appendChild(h('div',
-    h('span.eyebrow', 'Your library'),
-    h('h2', 'Cookbooks'),
-  ));
+  head.appendChild(h('h2', 'Your cookbooks'));
   cookbooksSection.appendChild(head);
 
   const grid = h('div.cookbook-grid');
@@ -74,12 +67,7 @@ export async function HomeView() {
 
   // Recent recipes
   const recentSection = h('section');
-  recentSection.appendChild(h('div.section-head',
-    h('div',
-      h('span.eyebrow', 'Latest'),
-      h('h2', 'Recently saved'),
-    ),
-  ));
+  recentSection.appendChild(h('div.section-head', h('h2', 'Recently saved')));
   const recentGrid = h('div.recipe-grid');
   recentSection.appendChild(recentGrid);
   root.appendChild(recentSection);
