@@ -126,8 +126,10 @@ export function openCookbookEditor({ cookbook = null, onSave }) {
   descInput.addEventListener('input', () => { description = descInput.value; });
   root.appendChild(labelled('Description', descInput));
 
-  // Cover image picker — presets + (when editing an existing cookbook)
-  // an upload button. Selecting any preset overrides the color/icon look.
+  // Cover image picker — a "No image" tile, then every preset image in
+  // the shared gallery (public/assets/covers/), then an "Add to gallery"
+  // tile that uploads a new preset (image or PDF; PDFs get rendered to
+  // PNG server-side). Selecting any preset overrides the colour/icon look.
   const coverGrid = h('div.cover-presets-grid');
   const noneTile = h('button.cover-preset.cover-preset-none', { type: 'button', 'aria-label': 'No image (use color)' });
   noneTile.innerHTML = `<span>No image</span>`;
@@ -139,54 +141,93 @@ export function openCookbookEditor({ cookbook = null, onSave }) {
   if (!coverImage) noneTile.classList.add('selected');
   coverGrid.appendChild(noneTile);
 
-  // Lazily fetch presets so old saved coverImages still highlight correctly
+  // Build a single preset tile — used for both initially-fetched presets
+  // and freshly-uploaded ones. The little × in the corner deletes the
+  // preset from the gallery (with a confirm). stopPropagation so clicking
+  // × doesn't also select the tile.
+  function makePresetTile(p) {
+    const tile = h('button.cover-preset', { type: 'button', 'aria-label': `Use cover ${p.name}` });
+    tile.dataset.url = p.url;
+    tile.dataset.name = p.name;
+    tile.style.backgroundImage = `url(${JSON.stringify(p.url)})`;
+    if (coverImage === p.url) tile.classList.add('selected');
+    tile.addEventListener('click', () => {
+      coverImage = p.url;
+      $$('.cover-preset', coverGrid).forEach(b => b.classList.toggle('selected', b === tile));
+      refreshPreview();
+    });
+    const del = h('button.cover-preset-delete', {
+      type: 'button',
+      'aria-label': `Remove preset ${p.name}`,
+      title: 'Remove from gallery',
+    });
+    del.innerHTML = icon('close');
+    del.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      if (!confirm(`Remove "${p.name}" from the cover gallery? Cookbooks already using it will fall back to their colour.`)) return;
+      try {
+        await api.deleteCoverPreset(p.name);
+        if (coverImage === p.url) {
+          coverImage = null;
+          noneTile.classList.add('selected');
+          refreshPreview();
+        }
+        tile.remove();
+      } catch (err) { toast.error(err.message); }
+    });
+    tile.appendChild(del);
+    return tile;
+  }
+
+  // The "Add to gallery" button lives inside the grid as the LAST tile so
+  // it visually reads as "+ new preset" alongside the others. Renders a
+  // dashed border + plus icon to match the new-cookbook tile pattern.
+  function makeAddTile() {
+    const tile = h('label.cover-preset.cover-preset-add', { tabindex: '0', title: 'Upload an image or PDF — PDFs render to PNG' });
+    tile.innerHTML = `${icon('plus')}<span>Add image / PDF</span>`;
+    const input = h('input', { type: 'file', accept: 'image/*,application/pdf', hidden: '' });
+    tile.appendChild(input);
+    input.addEventListener('change', async () => {
+      if (!input.files?.length) return;
+      try {
+        const { preset } = await api.uploadCoverPreset(input.files[0]);
+        toast.success('Added to gallery');
+        const newTile = makePresetTile(preset);
+        // Insert before the add-tile so it joins the preset row
+        coverGrid.insertBefore(newTile, tile);
+        // Auto-select the new preset
+        coverImage = preset.url;
+        $$('.cover-preset', coverGrid).forEach(b => b.classList.toggle('selected', b === newTile));
+        refreshPreview();
+        input.value = '';
+      } catch (err) { toast.error(err.message); }
+    });
+    return tile;
+  }
+
+  // Lazily fetch presets so we can re-select an existing coverImage when
+  // editing an existing cookbook. The add-tile renders immediately so the
+  // user doesn't wait on the network for the most important action.
+  const addTile = makeAddTile();
+  coverGrid.appendChild(addTile);
   api.listCoverPresets().then(({ presets }) => {
     (presets || []).forEach(p => {
-      const tile = h('button.cover-preset', { type: 'button', 'aria-label': `Use cover ${p.name}` });
-      tile.style.backgroundImage = `url(${JSON.stringify(p.url)})`;
-      if (coverImage === p.url) tile.classList.add('selected');
-      tile.addEventListener('click', () => {
-        coverImage = p.url;
-        $$('.cover-preset', coverGrid).forEach(b => b.classList.toggle('selected', b === tile));
-        refreshPreview();
-      });
-      coverGrid.appendChild(tile);
+      coverGrid.insertBefore(makePresetTile(p), addTile);
     });
-    // Show the previously-uploaded custom cover as a selectable tile too
+    // Per-cookbook uploaded covers (legacy /uploads/ URLs from before the
+    // shared gallery) still need to render as a selectable tile so the
+    // user can keep them on the existing cookbook even though they're
+    // not part of the shared preset gallery.
     if (coverImage && coverImage.startsWith('/uploads/') && !coverGrid.querySelector('.cover-preset.selected:not(.cover-preset-none)')) {
-      const customTile = h('button.cover-preset.selected', { type: 'button', 'aria-label': 'Uploaded cover' });
-      customTile.style.backgroundImage = `url(${JSON.stringify(coverImage)})`;
-      coverGrid.appendChild(customTile);
+      const legacyTile = h('button.cover-preset.selected', { type: 'button', 'aria-label': 'Cookbook-only cover' });
+      legacyTile.style.backgroundImage = `url(${JSON.stringify(coverImage)})`;
+      coverGrid.insertBefore(legacyTile, addTile);
     }
-  }).catch(() => { /* leave grid as just the "No image" tile */ });
+  }).catch(() => { /* leave grid as just the "No image" + add tiles */ });
 
   const coverSection = labelled('Cover image', coverGrid);
-  if (cookbook) {
-    const uploadBtn = h('label.cover-upload-btn', { tabindex: '0' });
-    uploadBtn.innerHTML = `${icon('camera')}<span>Upload your own…</span>`;
-    const fileInput = h('input', { type: 'file', accept: 'image/*', hidden: '' });
-    uploadBtn.appendChild(fileInput);
-    fileInput.addEventListener('change', async () => {
-      if (!fileInput.files?.length) return;
-      try {
-        const { url, cookbook: updated } = await api.uploadCoverImage(cookbook.id, fileInput.files[0]);
-        coverImage = url;
-        refreshPreview();
-        toast.success('Cover uploaded');
-        // Add to grid and select it
-        $$('.cover-preset', coverGrid).forEach(b => b.classList.remove('selected'));
-        const newTile = h('button.cover-preset.selected', { type: 'button', 'aria-label': 'Uploaded cover' });
-        newTile.style.backgroundImage = `url(${JSON.stringify(url)})`;
-        coverGrid.appendChild(newTile);
-        // Surface the saved cookbook data to the parent so card refreshes
-        if (updated) cookbook.coverImage = url;
-      } catch (e) { toast.error(e.message); }
-    });
-    coverSection.appendChild(uploadBtn);
-  } else {
-    coverSection.appendChild(h('p.cover-upload-hint',
-      'Upload custom covers after creating the cookbook (or drop image files into public/assets/covers/ to share them across all cookbooks).'));
-  }
+  coverSection.appendChild(h('p.cover-upload-hint',
+    'Upload a JPG / PNG / WEBP — or drop in a PDF and we\'ll render the first page. Uploaded covers join the gallery and are reusable across cookbooks.'));
   root.appendChild(coverSection);
 
   // Color picker
@@ -536,6 +577,266 @@ export async function openSaveRecipeFlow({ recipe, onSave }) {
 
   await refreshTabs();
   openSave();
+}
+
+// ─── Manual recipe editor ──────────────────────────────────────────────────
+//
+// Used both for creating a brand-new recipe from scratch and editing an
+// existing manually-created one. The recipe view's editable title + side
+// content (notes, photos, rating, tab/cookbook picker) still handle their
+// own in-place edits; this modal is for the bulk fields (description,
+// times, servings, ingredients, instructions, hero image).
+export async function openRecipeEditor({ recipe = null, cookbookId = null, tabId = null, onSave } = {}) {
+  const isEdit = !!recipe;
+
+  // Local working copy — all edits land here until Save.
+  let state = {
+    title:         recipe?.title || '',
+    description:   recipe?.description || '',
+    heroImage:     recipe?.heroImage || null,
+    author:        recipe?.author || '',
+    prepMinutes:   recipe?.prepMinutes ?? null,
+    cookMinutes:   recipe?.cookMinutes ?? null,
+    totalMinutes:  recipe?.totalMinutes ?? null,
+    servings:      recipe?.servings ?? null,
+    yieldText:     recipe?.yieldText || '',
+    // Normalise ingredients/instructions into editable arrays of strings.
+    // For ingredients we use the `.text` of each parsed object; for
+    // instructions we collapse heading-vs-step into a tagged object.
+    ingredients:   (recipe?.ingredients || []).map(i => (typeof i === 'string' ? i : (i?.text || ''))),
+    instructions:  (recipe?.instructions || []).map(s => (
+      s?.isHeading
+        ? { kind: 'heading', text: s.section || s.text || '' }
+        : { kind: 'step', text: s?.text || (typeof s === 'string' ? s : '') }
+    )),
+  };
+  if (state.instructions.length === 0) state.instructions = [{ kind: 'step', text: '' }];
+  if (state.ingredients.length === 0)  state.ingredients  = [''];
+
+  const root = h('div.stack-5.recipe-editor');
+  root.appendChild(h('h3', isEdit ? 'Edit recipe' : 'Create your own recipe'));
+
+  // ── Title (required) ────────────────────────────────────────────────────
+  const titleInput = h('input.input', { type: 'text', placeholder: 'e.g. "Grandma\'s Lemon Loaf"', maxlength: 200, value: state.title });
+  titleInput.addEventListener('input', () => { state.title = titleInput.value; });
+  root.appendChild(labelled('Title', titleInput));
+
+  // ── Hero image upload ───────────────────────────────────────────────────
+  const heroWrap = h('div.recipe-editor-hero');
+  const heroPreview = h('div.recipe-editor-hero-preview');
+  const refreshHero = () => {
+    if (state.heroImage) {
+      heroPreview.style.backgroundImage = `url(${JSON.stringify(state.heroImage)})`;
+      heroPreview.classList.add('has-image');
+      heroPreview.innerHTML = '';
+      const clear = h('button.recipe-editor-hero-clear', { type: 'button', 'aria-label': 'Remove photo', title: 'Remove photo' });
+      clear.innerHTML = icon('close');
+      clear.addEventListener('click', (e) => { e.preventDefault(); state.heroImage = null; refreshHero(); });
+      heroPreview.appendChild(clear);
+    } else {
+      heroPreview.style.backgroundImage = '';
+      heroPreview.classList.remove('has-image');
+      heroPreview.innerHTML = `<span class="muted">No photo yet</span>`;
+    }
+  };
+  refreshHero();
+  const heroBtn = h('label.cover-upload-btn', { tabindex: '0' });
+  heroBtn.innerHTML = `${icon('camera')}<span>Choose photo…</span>`;
+  const heroInput = h('input', { type: 'file', accept: 'image/*', hidden: '' });
+  heroBtn.appendChild(heroInput);
+  heroInput.addEventListener('change', async () => {
+    if (!heroInput.files?.length) return;
+    try {
+      const { url } = await api.uploadImage(heroInput.files[0]);
+      state.heroImage = url;
+      refreshHero();
+      toast.success('Photo added');
+      heroInput.value = '';
+    } catch (err) { toast.error(err.message); }
+  });
+  heroWrap.appendChild(heroPreview);
+  heroWrap.appendChild(heroBtn);
+  root.appendChild(labelled('Hero photo', heroWrap));
+
+  // ── Description (optional) ──────────────────────────────────────────────
+  const descInput = h('textarea.input', { placeholder: 'Optional — a line or two about this recipe', maxlength: 600, rows: 2 }, state.description);
+  descInput.addEventListener('input', () => { state.description = descInput.value; });
+  root.appendChild(labelled('Description', descInput));
+
+  // ── Times (prep / cook / total) ─────────────────────────────────────────
+  function numField(placeholder, key) {
+    const input = h('input.input.input-num', { type: 'number', min: '0', step: '1', placeholder, value: state[key] ?? '' });
+    input.addEventListener('input', () => {
+      const v = input.value.trim();
+      state[key] = v === '' ? null : Math.max(0, Math.floor(Number(v)));
+    });
+    return input;
+  }
+  const timesGrid = h('div.recipe-editor-grid-3');
+  timesGrid.appendChild(labelled('Prep (min)', numField('e.g. 15', 'prepMinutes')));
+  timesGrid.appendChild(labelled('Cook (min)', numField('e.g. 25', 'cookMinutes')));
+  timesGrid.appendChild(labelled('Total (min)', numField('e.g. 45', 'totalMinutes')));
+  root.appendChild(timesGrid);
+
+  // ── Servings + yield text ──────────────────────────────────────────────
+  const servingsGrid = h('div.recipe-editor-grid-2');
+  servingsGrid.appendChild(labelled('Servings', numField('e.g. 12', 'servings')));
+  const yieldInput = h('input.input', { type: 'text', placeholder: 'e.g. "12 cookies"', maxlength: 60, value: state.yieldText });
+  yieldInput.addEventListener('input', () => { state.yieldText = yieldInput.value; });
+  servingsGrid.appendChild(labelled('Yield text', yieldInput));
+  root.appendChild(servingsGrid);
+
+  // ── Author (optional) ──────────────────────────────────────────────────
+  const authorInput = h('input.input', { type: 'text', placeholder: 'e.g. "Grandma" — leave blank if it\'s your own', maxlength: 120, value: state.author });
+  authorInput.addEventListener('input', () => { state.author = authorInput.value; });
+  root.appendChild(labelled('Author (optional)', authorInput));
+
+  // ── Ingredients (list) ─────────────────────────────────────────────────
+  const ingList = h('div.recipe-editor-list');
+  function renderIngredients() {
+    mount(ingList);
+    state.ingredients.forEach((text, idx) => {
+      const row = h('div.recipe-editor-list-row');
+      const input = h('input.input', {
+        type: 'text', value: text,
+        placeholder: 'e.g. "1 cup flour" or "2 large eggs, beaten"',
+      });
+      input.addEventListener('input', () => { state.ingredients[idx] = input.value; });
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); state.ingredients.splice(idx + 1, 0, ''); renderIngredients(); ingList.querySelectorAll('input')[idx + 1]?.focus(); }
+      });
+      const del = h('button.btn.btn-ghost.btn-sm', { type: 'button', 'aria-label': 'Remove ingredient', title: 'Remove' });
+      del.innerHTML = icon('close');
+      del.addEventListener('click', () => {
+        state.ingredients.splice(idx, 1);
+        if (state.ingredients.length === 0) state.ingredients = [''];
+        renderIngredients();
+      });
+      row.appendChild(input);
+      row.appendChild(del);
+      ingList.appendChild(row);
+    });
+    const add = h('button.btn.btn-ghost.btn-sm.recipe-editor-add-row', { type: 'button' });
+    add.innerHTML = `${icon('plus')}<span>Add ingredient</span>`;
+    add.addEventListener('click', () => { state.ingredients.push(''); renderIngredients(); ingList.querySelectorAll('input')[state.ingredients.length - 1]?.focus(); });
+    ingList.appendChild(add);
+  }
+  renderIngredients();
+  root.appendChild(labelled('Ingredients', ingList));
+
+  // ── Instructions (list with optional section headings) ─────────────────
+  const stepsList = h('div.recipe-editor-list');
+  function renderSteps() {
+    mount(stepsList);
+    state.instructions.forEach((item, idx) => {
+      const row = h('div.recipe-editor-list-row');
+      const input = item.kind === 'heading'
+        ? h('input.input.recipe-editor-heading', {
+            type: 'text', value: item.text,
+            placeholder: 'Section title — e.g. "Preparation"',
+          })
+        : h('textarea.input', {
+            rows: '2',
+            placeholder: 'Step text — what to do, in detail',
+          }, item.text);
+      input.addEventListener('input', () => { state.instructions[idx].text = input.value; });
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+          e.preventDefault();
+          state.instructions.splice(idx + 1, 0, { kind: 'step', text: '' });
+          renderSteps();
+          stepsList.querySelectorAll('textarea, input')[idx + 1]?.focus();
+        }
+      });
+      const del = h('button.btn.btn-ghost.btn-sm', { type: 'button', 'aria-label': 'Remove step', title: 'Remove' });
+      del.innerHTML = icon('close');
+      del.addEventListener('click', () => {
+        state.instructions.splice(idx, 1);
+        if (state.instructions.length === 0) state.instructions = [{ kind: 'step', text: '' }];
+        renderSteps();
+      });
+      row.appendChild(input);
+      row.appendChild(del);
+      stepsList.appendChild(row);
+    });
+    const addRow = h('div.recipe-editor-add-buttons');
+    const addStep = h('button.btn.btn-ghost.btn-sm', { type: 'button' });
+    addStep.innerHTML = `${icon('plus')}<span>Add step</span>`;
+    addStep.addEventListener('click', () => {
+      state.instructions.push({ kind: 'step', text: '' });
+      renderSteps();
+      const els = stepsList.querySelectorAll('textarea, input');
+      els[els.length - 1]?.focus();
+    });
+    const addHeading = h('button.btn.btn-ghost.btn-sm', { type: 'button' });
+    addHeading.innerHTML = `${icon('sparkle')}<span>Add section heading</span>`;
+    addHeading.addEventListener('click', () => {
+      state.instructions.push({ kind: 'heading', text: '' });
+      renderSteps();
+      const els = stepsList.querySelectorAll('textarea, input');
+      els[els.length - 1]?.focus();
+    });
+    addRow.appendChild(addStep);
+    addRow.appendChild(addHeading);
+    stepsList.appendChild(addRow);
+  }
+  renderSteps();
+  root.appendChild(labelled('Instructions', stepsList));
+
+  // ── Save / Cancel ───────────────────────────────────────────────────────
+  const actions = h('div.row');
+  if (isEdit) {
+    // Delete-from-modal isn't exposed here — the recipe page already has a
+    // Remove button. Modal stays focused on editing the fields.
+  }
+  actions.appendChild(h('div.spacer'));
+  actions.appendChild(h('button.btn.btn-ghost', { type: 'button', onClick: closeModal }, 'Cancel'));
+  const save = h('button.btn.btn-primary', { type: 'button' });
+  save.innerHTML = `${icon('bookmarkFilled')}<span>${isEdit ? 'Save changes' : 'Create recipe'}</span>`;
+  save.addEventListener('click', async () => {
+    const title = state.title.trim();
+    if (!title) { toast.error('Recipe needs a title'); titleInput.focus(); return; }
+    save.disabled = true;
+    try {
+      const ingredientsForServer = state.ingredients.map(s => s.trim()).filter(Boolean);
+      const instructionsForServer = state.instructions
+        .filter(s => s.text.trim())
+        .map(s => s.kind === 'heading' ? { isHeading: true, section: s.text.trim() } : { text: s.text.trim() });
+      const payload = {
+        cookbookId: cookbookId ?? recipe?.cookbookId ?? null,
+        tabId:      tabId ?? recipe?.tabId ?? null,
+        recipe: {
+          title,
+          description: state.description.trim() || null,
+          heroImage:   state.heroImage || null,
+          author:      state.author.trim() || null,
+          prepMinutes: state.prepMinutes,
+          cookMinutes: state.cookMinutes,
+          totalMinutes: state.totalMinutes,
+          servings:    state.servings,
+          yieldText:   state.yieldText.trim() || null,
+          ingredients: ingredientsForServer,
+          instructions: instructionsForServer,
+        },
+      };
+      let result;
+      if (isEdit) {
+        // PATCH the existing row with the edited fields. cookbookId/tabId
+        // not in the payload (the recipe-page picker handles that already).
+        result = await api.updateRecipe(recipe.id, payload.recipe);
+      } else {
+        result = await api.saveRecipe(payload);
+      }
+      toast.success(isEdit ? 'Recipe updated' : 'Recipe created');
+      closeModal();
+      onSave?.(result.recipe);
+    } catch (err) { toast.error(err.message); save.disabled = false; }
+  });
+  actions.appendChild(save);
+  root.appendChild(actions);
+
+  openModal(root);
+  setTimeout(() => titleInput.focus(), 60);
 }
 
 // ─── Helpers ───────────────────────────────────────────────────────────────

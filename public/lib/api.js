@@ -31,6 +31,18 @@ export const api = {
   updateCookbook: (id, data) => request('PATCH',  `/cookbooks/${id}`, data),
   deleteCookbook: (id) => request('DELETE', `/cookbooks/${id}`),
   listCoverPresets: () => request('GET', '/cover-presets'),
+  uploadCoverPreset: async (file) => {
+    const form = new FormData();
+    form.append('cover', file);
+    const res = await fetch('/api/cover-presets', { method: 'POST', body: form });
+    if (!res.ok) {
+      let msg = res.statusText;
+      try { const j = await res.json(); if (j?.error) msg = j.error; } catch {}
+      const err = new Error(msg); err.status = res.status; throw err;
+    }
+    return res.json();
+  },
+  deleteCoverPreset: (name) => request('DELETE', `/cover-presets/${encodeURIComponent(name)}`),
   uploadCoverImage: async (cookbookId, file) => {
     const form = new FormData();
     form.append('cover', file);
@@ -58,6 +70,20 @@ export const api = {
   saveRecipe:   (payload) => request('POST',   `/recipes`, payload),
   updateRecipe: (id, data) => request('PATCH',  `/recipes/${id}`, data),
   deleteRecipe: (id) => request('DELETE', `/recipes/${id}`),
+
+  // Generic single image upload (returns { url }) — used to attach a hero
+  // image to a manually-created recipe before the recipe row exists.
+  uploadImage: async (file) => {
+    const form = new FormData();
+    form.append('image', file);
+    const res = await fetch('/api/uploads/image', { method: 'POST', body: form });
+    if (!res.ok) {
+      let msg = res.statusText;
+      try { const j = await res.json(); if (j?.error) msg = j.error; } catch {}
+      const err = new Error(msg); err.status = res.status; throw err;
+    }
+    return res.json();
+  },
 
   // Photos (special: multipart/form-data)
   uploadPhotos: async (recipeId, files) => {

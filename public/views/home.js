@@ -2,7 +2,7 @@ import { h, mount } from '../lib/h.js';
 import { icon } from '../lib/icons.js';
 import { api } from '../lib/api.js';
 import { navigate } from '../lib/router.js';
-import { openCookbookEditor } from '../components/editors.js';
+import { openCookbookEditor, openRecipeEditor } from '../components/editors.js';
 import * as toast from '../lib/toast.js';
 import { StarRating } from '../components/starRating.js';
 import { getRecentlyViewed } from '../lib/recentlyViewed.js';
@@ -53,6 +53,16 @@ export async function HomeView() {
     navigate('/recipe?' + new URLSearchParams({ url }).toString());
   }
   hero.appendChild(pasteCard);
+
+  // "Create your own recipe" link sits underneath the paste card as a
+  // small secondary action — for cooks who want to type a family recipe
+  // from memory rather than pull one off a website.
+  const writeOwn = h('button.hero-write-own', { type: 'button' });
+  writeOwn.innerHTML = `${icon('edit')}<span>or write your own recipe from scratch</span>`;
+  writeOwn.addEventListener('click', () => openRecipeEditor({
+    onSave: (r) => navigate(`/saved/${r.id}`),
+  }));
+  hero.appendChild(writeOwn);
   root.appendChild(hero);
 
   // Cookbooks (the dashed "+ New cookbook" tile in the grid is the only

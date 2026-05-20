@@ -1,10 +1,11 @@
 import { Router } from 'express';
 import multer from 'multer';
-import { mkdirSync, readdirSync, existsSync, unlinkSync } from 'node:fs';
+import { mkdirSync, readdirSync, existsSync, unlinkSync, statSync, renameSync } from 'node:fs';
 import { dirname, resolve, extname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomBytes } from 'node:crypto';
 import db from '../db.js';
+import { pdfFirstPageToPng, safeUnlink, isPdfFilename } from '../imageProcessing.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const UPLOAD_DIR = resolve(__dirname, '..', '..', 'uploads');
@@ -23,6 +24,24 @@ const coverUpload = multer({
   }),
   limits: { fileSize: 8 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => cb(/^image\//i.test(file.mimetype) ? null : new Error('Only images allowed'), true),
+});
+
+// Gallery uploader accepts image files AND PDFs. PDFs are routed through
+// sharp's libvips PDF decoder and the first page is rendered to PNG before
+// it ever lands in the preset folder, so the browser only ever sees images.
+const galleryUpload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, UPLOAD_DIR),
+    filename: (_req, file, cb) => {
+      const ext = extname(file.originalname).toLowerCase() || '.bin';
+      cb(null, `gallery-${Date.now()}-${randomBytes(5).toString('hex')}${ext}`);
+    },
+  }),
+  limits: { fileSize: 16 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const ok = /^image\//i.test(file.mimetype) || file.mimetype === 'application/pdf';
+    cb(ok ? null : new Error('Only image files or PDFs are allowed.'), ok);
+  },
 });
 
 const router = Router();
@@ -159,18 +178,74 @@ router.post('/cookbooks/:id/cover-image', coverUpload.single('cover'), (req, res
 
 // List the files currently sitting in public/assets/covers/ — these are the
 // preset cover options that show in the editor. Drop any image into that
-// folder and it appears as a selectable preset.
+// folder and it appears as a selectable preset. Sorted newest-first by
+// mtime so freshly-uploaded presets land at the top of the gallery.
 router.get('/cover-presets', (_req, res) => {
   try {
-    const files = readdirSync(PRESET_DIR)
-      .filter(name => /\.(jpg|jpeg|png|webp|avif|gif|svg)$/i.test(name))
-      .filter(name => !name.startsWith('.'))
-      .sort()
-      .map(name => ({ name, url: `/assets/covers/${name}` }));
-    res.json({ presets: files });
+    const files = readdirSync(PRESET_DIR, { withFileTypes: true })
+      .filter(d => d.isFile())
+      .filter(d => /\.(jpg|jpeg|png|webp|avif|gif|svg)$/i.test(d.name))
+      .filter(d => !d.name.startsWith('.'));
+    const withMtime = files.map(d => {
+      const fp = join(PRESET_DIR, d.name);
+      let mtime = 0;
+      try { mtime = statSync(fp).mtimeMs; } catch {}
+      return { name: d.name, url: `/assets/covers/${d.name}`, mtime };
+    });
+    withMtime.sort((a, b) => b.mtime - a.mtime);
+    res.json({ presets: withMtime.map(({ name, url }) => ({ name, url })) });
   } catch (err) {
     res.json({ presets: [] });
   }
+});
+
+// Upload a new preset cover so it shows up as a selectable option for every
+// cookbook (not just the one being edited). Accepts standard image formats
+// AND PDFs — PDFs are rendered to PNG via sharp's libvips PDF decoder so
+// the gallery only ever serves real images. Uploaded files land directly
+// in the public/assets/covers/ directory.
+router.post('/cover-presets', galleryUpload.single('cover'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No file uploaded.' });
+  const uploadedPath = req.file.path;
+  try {
+    let presetName;
+    let presetPath;
+    if (isPdfFilename(req.file.originalname) || req.file.mimetype === 'application/pdf') {
+      presetName = `preset-${Date.now()}-${randomBytes(5).toString('hex')}.png`;
+      presetPath = join(PRESET_DIR, presetName);
+      await pdfFirstPageToPng(uploadedPath, presetPath);
+    } else {
+      const ext = extname(req.file.originalname).toLowerCase() || '.jpg';
+      const safeExt = /^\.(jpg|jpeg|png|webp|avif|gif|svg)$/i.test(ext) ? ext : '.jpg';
+      presetName = `preset-${Date.now()}-${randomBytes(5).toString('hex')}${safeExt}`;
+      presetPath = join(PRESET_DIR, presetName);
+      // Move the uploaded file from the staging area into the preset folder.
+      renameSync(uploadedPath, presetPath);
+    }
+    // Successful — clean up the staged file (if it still exists from the
+    // PDF path, where we read it instead of moving it).
+    await safeUnlink(uploadedPath);
+    res.status(201).json({ preset: { name: presetName, url: `/assets/covers/${presetName}` } });
+  } catch (err) {
+    await safeUnlink(uploadedPath);
+    res.status(400).json({ error: err.message || 'Could not save the preset.' });
+  }
+});
+
+// Remove a preset cover from the gallery. Doesn't touch any cookbooks that
+// already point at the preset's URL — they keep working because the file
+// path still resolves until it's deleted; once deleted those cookbooks
+// just render their colour fallback. Restricts deletion to the preset
+// directory to prevent any path-traversal mischief.
+router.delete('/cover-presets/:name', (req, res) => {
+  const safe = req.params.name.replace(/[/\\]+/g, '');
+  if (safe !== req.params.name) return res.status(400).json({ error: 'Invalid preset name.' });
+  const fp = join(PRESET_DIR, safe);
+  // Make sure the resolved path is actually inside PRESET_DIR
+  if (!fp.startsWith(PRESET_DIR)) return res.status(400).json({ error: 'Invalid preset name.' });
+  if (!existsSync(fp)) return res.status(404).json({ error: 'Preset not found.' });
+  try { unlinkSync(fp); } catch (e) { return res.status(500).json({ error: e.message }); }
+  res.status(204).end();
 });
 
 router.delete('/cookbooks/:id', (req, res) => {

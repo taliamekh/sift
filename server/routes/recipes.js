@@ -5,6 +5,7 @@ import { dirname, resolve, extname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomBytes } from 'node:crypto';
 import db from '../db.js';
+import { parseIngredient } from '../parser/quantity.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const UPLOAD_DIR = resolve(__dirname, '..', '..', 'uploads');
@@ -103,6 +104,49 @@ router.get('/recipes', (req, res) => {
   });
 });
 
+// Coerce client ingredients (which can be either raw strings, simple
+// { text } objects, or fully-parsed { text, quantity, unit, name } objects)
+// into the parsed schema the rest of the app expects. The save-from-URL
+// flow already produces parsed shapes; manual entry usually only sends
+// raw text, which we run through the existing parseIngredient so the
+// servings stepper and print view still get quantity/unit metadata.
+function normalizeIngredients(list) {
+  if (!Array.isArray(list)) return [];
+  return list.map(item => {
+    if (typeof item === 'string') {
+      return parseIngredient(item) || { text: item, name: item };
+    }
+    if (item && typeof item === 'object') {
+      if (item.quantity != null || item.unit) return item;
+      if (item.text) return parseIngredient(item.text) || item;
+    }
+    return null;
+  }).filter(Boolean);
+}
+
+// Mirror for instructions: clients may send strings, objects with text, or
+// section-heading objects ({ isHeading: true, section: 'Preparation' }).
+// Normalise into the { index, text, isHeading, section } shape the
+// renderer + print stylesheet already understand.
+function normalizeInstructions(list) {
+  if (!Array.isArray(list)) return [];
+  let idx = 0;
+  return list.map(item => {
+    if (typeof item === 'string') {
+      return { index: idx++, text: item.trim(), isHeading: false, section: null };
+    }
+    if (item && typeof item === 'object') {
+      if (item.isHeading) {
+        return { index: idx, text: '', isHeading: true, section: (item.section || item.text || '').trim() };
+      }
+      const text = (item.text || '').trim();
+      if (!text) return null;
+      return { index: idx++, text, isHeading: false, section: null };
+    }
+    return null;
+  }).filter(Boolean);
+}
+
 router.post('/recipes', (req, res) => {
   const { cookbookId, tabId, recipe } = req.body || {};
   if (!recipe || typeof recipe !== 'object') {
@@ -119,6 +163,8 @@ router.post('/recipes', (req, res) => {
     const exists = db.prepare('SELECT id FROM tabs WHERE id = ?').get(Number(tabId));
     if (!exists) return res.status(400).json({ error: 'Tab not found.' });
   }
+  const ingredients = normalizeIngredients(recipe.ingredients);
+  const instructions = normalizeInstructions(recipe.instructions);
   const now = Date.now();
   const info = db.prepare(`
     INSERT INTO recipes (
@@ -140,8 +186,8 @@ router.post('/recipes', (req, res) => {
     recipe.totalMinutes ?? null,
     recipe.servings ?? null,
     recipe.yieldText || null,
-    JSON.stringify(recipe.ingredients || []),
-    JSON.stringify(recipe.instructions || []),
+    JSON.stringify(ingredients),
+    JSON.stringify(instructions),
     recipe.rating?.value ?? recipe.externalRating ?? null,
     recipe.rating?.count ?? recipe.externalRatingCount ?? null,
     recipe.userRating ?? null,
@@ -173,8 +219,15 @@ router.patch('/recipes/:id', (req, res) => {
   const {
     cookbookId, tabId, userRating, userNotes, title, servings,
     ingredients, instructions,
+    // Extra fields accepted on top of the original save-flow patch surface
+    // so the manual recipe editor can edit every field a user might fill
+    // in. All are optional — `undefined` keeps the existing value.
+    description, heroImage, author, prepMinutes, cookMinutes, totalMinutes,
+    yieldText,
   } = req.body || {};
   const now = Date.now();
+  const normalizedIngredients = ingredients ? normalizeIngredients(ingredients) : null;
+  const normalizedInstructions = instructions ? normalizeInstructions(instructions) : null;
   db.prepare(`
     UPDATE recipes
     SET cookbook_id = COALESCE(?, cookbook_id),
@@ -182,7 +235,14 @@ router.patch('/recipes/:id', (req, res) => {
         user_rating = COALESCE(?, user_rating),
         user_notes = COALESCE(?, user_notes),
         title = COALESCE(?, title),
+        description = COALESCE(?, description),
+        hero_image = COALESCE(?, hero_image),
+        author = COALESCE(?, author),
+        prep_minutes = COALESCE(?, prep_minutes),
+        cook_minutes = COALESCE(?, cook_minutes),
+        total_minutes = COALESCE(?, total_minutes),
         servings = COALESCE(?, servings),
+        yield_text = COALESCE(?, yield_text),
         ingredients_json = COALESCE(?, ingredients_json),
         instructions_json = COALESCE(?, instructions_json),
         updated_at = ?
@@ -194,9 +254,16 @@ router.patch('/recipes/:id', (req, res) => {
     userRating ?? null,
     userNotes !== undefined ? userNotes : null,
     title?.trim() ?? null,
+    description ?? null,
+    heroImage ?? null,
+    author ?? null,
+    prepMinutes ?? null,
+    cookMinutes ?? null,
+    totalMinutes ?? null,
     servings ?? null,
-    ingredients ? JSON.stringify(ingredients) : null,
-    instructions ? JSON.stringify(instructions) : null,
+    yieldText ?? null,
+    normalizedIngredients ? JSON.stringify(normalizedIngredients) : null,
+    normalizedInstructions ? JSON.stringify(normalizedInstructions) : null,
     now,
     id,
   );
@@ -217,6 +284,15 @@ router.delete('/recipes/:id', (req, res) => {
     }
   }
   res.status(204).end();
+});
+
+// Generic single-image upload. Used by the manual recipe editor to attach
+// a hero image before the recipe row exists (so we can't use the photos
+// endpoint, which requires a recipe id). Returns the URL the client should
+// stash into the recipe's heroImage field.
+router.post('/uploads/image', upload.single('image'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No file uploaded.' });
+  res.status(201).json({ url: `/uploads/${req.file.filename}` });
 });
 
 // Photos -------------------------------------------------------------------

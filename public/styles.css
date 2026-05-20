@@ -1277,6 +1277,64 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
 .recipe-card-source:focus-visible { outline: 2px solid var(--berry); outline-offset: 2px; }
 .recipe-card-clickable { cursor: pointer; }
 .recipe-card-clickable:focus-visible { outline: 2px solid var(--berry); outline-offset: 2px; }
+
+/* "Add your own recipe" tile — sits at the end of the cookbook detail
+   recipe grid. Same aspect/shape as recipe cards, dashed border + plus
+   so it reads as the creation slot. */
+.recipe-card-add {
+  background: transparent;
+  background-image: linear-gradient(180deg, var(--pink-50), transparent);
+  border: 2px dashed var(--border-strong);
+  border-radius: var(--r-lg);
+  box-shadow: none;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  color: var(--cocoa-muted);
+  transition: all var(--dur-base) var(--ease-snap);
+  min-height: 220px;
+}
+.recipe-card-add:hover {
+  color: var(--berry);
+  border-color: var(--pink-400);
+  background-image: linear-gradient(180deg, var(--pink-100), transparent);
+  transform: translateY(-4px);
+}
+.recipe-card-add-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-2);
+  font-weight: 600;
+  font-size: var(--step--1);
+  text-align: center;
+  padding: var(--s-4);
+}
+.recipe-card-add-inner svg { width: 28px; height: 28px; }
+
+/* Subtle "or write your own recipe" link beneath the URL paste card */
+.hero-write-own {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin-top: var(--s-3);
+  padding: 8px 18px;
+  border-radius: var(--r-pill);
+  background: transparent;
+  border: 1px dashed var(--border-strong);
+  color: var(--cocoa-muted);
+  font-weight: 600;
+  font-size: var(--step--1);
+  cursor: pointer;
+  font-style: italic;
+  transition: all var(--dur-quick);
+}
+.hero-write-own:hover {
+  color: var(--berry);
+  border-color: var(--pink-400);
+  background: var(--pink-50);
+}
+.hero-write-own svg { width: 14px; height: 14px; }
 .recipe-card-tab {
   position: absolute;
   top: var(--s-3); left: var(--s-3);
@@ -1429,6 +1487,55 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
 }
 .cover-preset-none.selected { color: var(--berry); }
 
+/* "Add to gallery" tile — visually a peer of the preset tiles but reads as
+   a creation slot via dashed border + plus + label. Acts as a <label>
+   wrapping a hidden file input. */
+.cover-preset-add {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: var(--pink-50);
+  border: 2px dashed var(--border-strong);
+  color: var(--cocoa-muted);
+  font-size: 10px;
+  font-weight: 600;
+  text-align: center;
+  padding: 4px;
+  line-height: 1.15;
+}
+.cover-preset-add svg { width: 20px; height: 20px; color: var(--berry); }
+.cover-preset-add:hover { color: var(--berry); border-color: var(--pink-400); background: var(--pink-100); }
+
+/* Small × badge in the top-right of each preset tile so the user can prune
+   the gallery without leaving the editor. Hidden until tile hover/focus
+   so it doesn't compete with the preset image visually. */
+.cover-preset-delete {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  background: rgba(74, 44, 58, 0.55);
+  color: white;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--dur-quick), background var(--dur-quick);
+  z-index: 2;
+}
+.cover-preset-delete svg { width: 11px; height: 11px; }
+.cover-preset:hover .cover-preset-delete,
+.cover-preset:focus-within .cover-preset-delete,
+.cover-preset-delete:focus-visible { opacity: 1; }
+.cover-preset-delete:hover { background: rgba(178, 58, 109, 0.85); }
+.cover-preset-none .cover-preset-delete,
+.cover-preset-add .cover-preset-delete { display: none; }
+
 .cover-upload-btn {
   display: inline-flex;
   align-items: center;
@@ -1444,6 +1551,85 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
   transition: background var(--dur-quick);
   width: fit-content;
 }
+
+/* Manual recipe editor — laid out as a stack of labelled fields, with
+   grids for short numeric rows (times, servings) and dedicated list
+   styling for ingredients/instructions. */
+.recipe-editor .input { width: 100%; }
+.recipe-editor .input-num { max-width: 100%; }
+.recipe-editor-grid-2 { display: grid; grid-template-columns: 1fr 2fr; gap: var(--s-4); }
+.recipe-editor-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s-3); }
+@media (max-width: 560px) {
+  .recipe-editor-grid-2, .recipe-editor-grid-3 { grid-template-columns: 1fr; }
+}
+
+.recipe-editor-hero {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+}
+.recipe-editor-hero-preview {
+  width: 120px;
+  height: 80px;
+  flex-shrink: 0;
+  border-radius: var(--r-md);
+  background: var(--pink-50) center/cover no-repeat;
+  border: 1px dashed var(--border-strong);
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  color: var(--cocoa-muted);
+  position: relative;
+  overflow: hidden;
+}
+.recipe-editor-hero-preview.has-image { border-style: solid; border-color: var(--border); }
+.recipe-editor-hero-clear {
+  position: absolute;
+  top: 4px; right: 4px;
+  width: 22px; height: 22px;
+  display: grid; place-items: center;
+  background: rgba(74, 44, 58, 0.65);
+  color: white;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+}
+.recipe-editor-hero-clear svg { width: 12px; height: 12px; }
+.recipe-editor-hero-clear:hover { background: rgba(178, 58, 109, 0.85); }
+.recipe-editor-hero .cover-upload-btn { margin-top: 0; }
+
+.recipe-editor-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+.recipe-editor-list-row {
+  display: flex;
+  gap: var(--s-2);
+  align-items: flex-start;
+}
+.recipe-editor-list-row .input { flex: 1; }
+.recipe-editor-list-row textarea.input {
+  font-family: inherit;
+  resize: vertical;
+  min-height: 2.4em;
+}
+.recipe-editor-list-row .btn-ghost { padding: 8px; min-width: auto; flex-shrink: 0; }
+.recipe-editor-list-row .btn-ghost svg { width: 14px; height: 14px; }
+.recipe-editor-heading {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-weight: 600;
+  color: var(--berry);
+  background: var(--pink-50);
+}
+.recipe-editor-add-buttons {
+  display: flex;
+  gap: var(--s-2);
+  margin-top: var(--s-2);
+  flex-wrap: wrap;
+}
+.recipe-editor-add-row { align-self: flex-start; margin-top: var(--s-2); }
 .cover-upload-btn:hover { background: var(--pink-200); }
 .cover-upload-btn svg { width: 16px; height: 16px; }
 .cover-upload-hint {

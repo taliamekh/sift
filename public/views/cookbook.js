@@ -4,7 +4,7 @@ import { api } from '../lib/api.js';
 import { navigate } from '../lib/router.js';
 import { StarRating } from '../components/starRating.js';
 import { Breadcrumb } from '../components/breadcrumb.js';
-import { openCookbookEditor, openTabEditor } from '../components/editors.js';
+import { openCookbookEditor, openTabEditor, openRecipeEditor } from '../components/editors.js';
 import * as toast from '../lib/toast.js';
 
 export async function CookbookView({ id }) {
@@ -110,15 +110,36 @@ export async function CookbookView({ id }) {
       empty.appendChild(h('div.empty-illustration', { html: icon('bookmark') }));
       empty.appendChild(h('h3', state.activeTabId ? 'Nothing in this tab yet' : 'No recipes in this cookbook'));
       empty.appendChild(h('p', state.activeTabId
-        ? 'Save a recipe and drop it in this tab from the recipe page.'
-        : 'Paste a recipe URL from the home page to get started.'));
-      const cta = h('button.btn.btn-primary', { style: { marginTop: 'var(--s-4)' }, onClick: () => navigate('/') });
-      cta.innerHTML = `${icon('home')}<span>Back home</span>`;
-      empty.appendChild(cta);
+        ? 'Save a recipe to this tab, or add one of your own below.'
+        : 'Paste a recipe URL from the home page, or add one of your own below.'));
+      const ctaRow = h('div.row', { style: { marginTop: 'var(--s-4)', justifyContent: 'center', gap: 'var(--s-3)' } });
+      const addOwn = h('button.btn.btn-primary', { type: 'button' });
+      addOwn.innerHTML = `${icon('plus')}<span>Add your own recipe</span>`;
+      addOwn.addEventListener('click', () => openRecipeEditor({
+        cookbookId: state.cookbook.id,
+        tabId: state.activeTabId,
+        onSave: (r) => navigate(`/saved/${r.id}`),
+      }));
+      ctaRow.appendChild(addOwn);
+      const back = h('button.btn.btn-ghost', { type: 'button', onClick: () => navigate('/') });
+      back.innerHTML = `${icon('home')}<span>Back home</span>`;
+      ctaRow.appendChild(back);
+      empty.appendChild(ctaRow);
       page.appendChild(empty);
     } else {
       const grid = h('div.recipe-grid');
       recipesToShow.forEach(r => grid.appendChild(recipeCard(r, state)));
+      // "Add your own recipe" tile mirrors the New-cookbook tile on the
+      // home page so the affordance is consistent. Inherits the tab the
+      // user is currently viewing so the recipe lands where they expect.
+      const addTile = h('button.recipe-card.recipe-card-add', { type: 'button' });
+      addTile.innerHTML = `<span class="recipe-card-add-inner">${icon('plus')}<span>Add your own recipe</span></span>`;
+      addTile.addEventListener('click', () => openRecipeEditor({
+        cookbookId: state.cookbook.id,
+        tabId: state.activeTabId,
+        onSave: (r) => navigate(`/saved/${r.id}`),
+      }));
+      grid.appendChild(addTile);
       page.appendChild(grid);
     }
 

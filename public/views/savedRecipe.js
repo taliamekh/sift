@@ -5,6 +5,7 @@ import { navigate } from '../lib/router.js';
 import { RecipeView } from '../components/recipeView.js';
 import { StarInput, StarRating } from '../components/starRating.js';
 import { Breadcrumb } from '../components/breadcrumb.js';
+import { openRecipeEditor } from '../components/editors.js';
 import { addRecentlyViewed, removeRecentlyViewed } from '../lib/recentlyViewed.js';
 import * as toast from '../lib/toast.js';
 
@@ -89,6 +90,18 @@ function buildHeaderActions(recipe) {
     src.innerHTML = `${icon('external')}<span>Original recipe</span>`;
     actions.push(src);
   }
+
+  // Edit button — opens the recipe editor with the current row pre-loaded.
+  // Available for every saved recipe (manual or parsed-then-saved), so the
+  // user can fix typos, add their own notes inline, or rewrite ingredients
+  // after the fact. After save we reload the view so the new data shows.
+  const edit = h('button.btn.btn-secondary');
+  edit.innerHTML = `${icon('edit')}<span>Edit</span>`;
+  edit.addEventListener('click', () => openRecipeEditor({
+    recipe,
+    onSave: () => window.location.reload(),
+  }));
+  actions.push(edit);
 
   const print = h('button.btn.btn-secondary');
   print.innerHTML = `${icon('print')}<span>Print</span>`;
