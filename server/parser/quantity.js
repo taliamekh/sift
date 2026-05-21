@@ -183,6 +183,33 @@ export function parseIngredient(line) {
     rest = rest.slice(unitMatch[0].length).replace(/^\.?\s*/, '');
   }
 
+  // Alternative-unit form: "60g / 1/4 cup unsalted butter" or
+  // "2 cups / 16 oz milk". Recipe sites that publish both metric & imperial
+  // wedge the alt qty+unit right after the primary one, separated by "/".
+  // We pluck it out so it doesn't leak into the ingredient name (which used
+  // to render as "60 gram 1/4 cup unsalted butter") and surface both
+  // measurements via altQuantity/altUnit. Scales alongside the primary.
+  let altQuantity = null;
+  let altRangeMax = null;
+  let altUnit = null;
+  if (value != null) {
+    const altMatch = rest.match(/^\/\s*/);
+    if (altMatch) {
+      const afterSlash = rest.slice(altMatch[0].length);
+      const altQty = readLeadingQuantity(afterSlash);
+      if (altQty) {
+        const afterAltQty = afterSlash.slice(altQty.end).trimStart();
+        const altUnitMatch = afterAltQty.match(UNIT_RE);
+        if (altUnitMatch) {
+          altQuantity = altQty.value;
+          altRangeMax = altQty.rangeMax;
+          altUnit = UNIT_LOOKUP.get(altUnitMatch[1].toLowerCase().replace(/\.$/, '')) || altUnitMatch[1];
+          rest = afterAltQty.slice(altUnitMatch[0].length).replace(/^\.?\s*/, '');
+        }
+      }
+    }
+  }
+
   // Drop a single leading "of"
   rest = rest.replace(/^of\s+/i, '');
 
@@ -191,6 +218,9 @@ export function parseIngredient(line) {
     quantity: value,
     rangeMax,
     unit,
+    altQuantity,
+    altRangeMax,
+    altUnit,
     bracket,
     name: rest.trim() || original,
   };

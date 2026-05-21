@@ -92,13 +92,18 @@ db.exec(`
   }
 })();
 
-// One-time migration — earlier versions of the ingredient parser regex
-// matched "3/4" as decimal-3 with a stranded "/4" in the rest, and "(8oz)"
-// brackets could leave a comma behind. Both signatures are detectable, so
-// we sweep every saved recipe on boot and re-parse any ingredient whose
-// `name` field starts with a "/" or "," — re-running the now-correct
-// parseIngredient on the original `text` produces clean data. Migration is
-// idempotent: after the first pass nothing matches the signature.
+// One-time migration — sweeps every saved recipe and re-parses any
+// ingredient row whose stored shape predates a parser improvement. Triggers:
+//   1. `name` field starts with "/" or "," — older parser leaked these
+//      separators into the name (e.g. "3/4" → decimal 3 + stranded "/4",
+//      or "(8oz)" leaving a trailing comma).
+//   2. `name` still contains a leading alt-unit fragment like
+//      "/ 1/4 cup ..." — the now-current parser extracts altQuantity /
+//      altUnit, so refreshing produces "60g + altUnit: cup" instead of
+//      "60g + name: '/ 1/4 cup …'".
+//   3. `altQuantity` missing on rows whose raw text obviously contains
+//      the "Xg / Yunit" pattern — re-parsing populates it.
+// Migration is idempotent: after the first pass nothing matches.
 (() => {
   const rows = db.prepare('SELECT id, ingredients_json FROM recipes').all();
   const update = db.prepare('UPDATE recipes SET ingredients_json = ?, updated_at = ? WHERE id = ?');
@@ -107,9 +112,17 @@ db.exec(`
     let ingredients;
     try { ingredients = JSON.parse(row.ingredients_json || '[]'); } catch { continue; }
     if (!Array.isArray(ingredients) || !ingredients.length) continue;
-    const needsFix = ingredients.some(ing =>
-      typeof ing?.name === 'string' && /^[/,]/.test(ing.name) && typeof ing.text === 'string'
-    );
+    const needsFix = ingredients.some(ing => {
+      if (typeof ing?.name !== 'string' || typeof ing?.text !== 'string') return false;
+      if (/^[/,]/.test(ing.name)) return true;
+      // Alt-unit form leaked into name — re-parse will pull it out into
+      // altQuantity/altUnit and clean the name.
+      if (/^\/\s*[\d¼½¾⅓⅔⅛⅜⅝⅞]/.test(ing.name)) return true;
+      // Source text has "<qty><unit> / <qty><unit>" but the row was parsed
+      // before alt-unit support landed.
+      if (ing.altQuantity == null && /^[\d¼½¾⅓⅔⅛⅜⅝⅞ ]+(?:g|gram|grams|kg|ml|oz|lb|cup|cups|tbsp|tsp)\b\s*\/\s*[\d¼½¾⅓⅔⅛⅜⅝⅞]/i.test(ing.text)) return true;
+      return false;
+    });
     if (!needsFix) continue;
     const reparsed = ingredients.map(ing => {
       if (!ing?.text) return ing;

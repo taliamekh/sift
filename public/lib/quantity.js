@@ -45,18 +45,29 @@ export function scaleQuantity(value, factor) {
 }
 
 // Render a parsed ingredient (potentially scaled) back to its display parts
-// for use in our highlighted spans.
+// for use in our highlighted spans. When the parser also captured an
+// alternative-unit measurement (e.g. "60g / 1/4 cup"), `alt` is the
+// "<scaled qty> <unit>" pair so callers can render both side by side.
 export function renderIngredientParts(parsed, factor = 1) {
-  if (!parsed) return { qty: '', unit: '', name: '' };
-  if (parsed.quantity == null) return { qty: '', unit: parsed.unit || '', name: parsed.name || parsed.text || '' };
+  if (!parsed) return { qty: '', unit: '', name: '', alt: '' };
+  if (parsed.quantity == null) return { qty: '', unit: parsed.unit || '', name: parsed.name || parsed.text || '', alt: '' };
   const scaled = parsed.quantity * factor;
   const scaledMax = parsed.rangeMax != null ? parsed.rangeMax * factor : null;
   let qty = formatQuantity(scaled);
   if (scaledMax != null) qty = `${qty}–${formatQuantity(scaledMax)}`;
   if (parsed.bracket) qty = `${qty} ${parsed.bracket}`;
+  let alt = '';
+  if (parsed.altQuantity != null && Number.isFinite(parsed.altQuantity)) {
+    const aScaled = parsed.altQuantity * factor;
+    const aScaledMax = parsed.altRangeMax != null ? parsed.altRangeMax * factor : null;
+    let aQty = formatQuantity(aScaled);
+    if (aScaledMax != null) aQty = `${aQty}–${formatQuantity(aScaledMax)}`;
+    alt = parsed.altUnit ? `${aQty} ${parsed.altUnit}` : aQty;
+  }
   return {
     qty,
     unit: parsed.unit || '',
     name: parsed.name || '',
+    alt,
   };
 }

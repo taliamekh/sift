@@ -1018,6 +1018,10 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
   margin-right: 4px;
 }
 .ingredient-text .unit { color: var(--cocoa-muted); margin-right: 4px; }
+/* Alternative measurement (metric/imperial pair) — slightly dimmed so the
+   primary qty/unit still reads first, but always visible since the user
+   asked for every measurement to be preserved. */
+.ingredient-text .ing-alt { color: var(--cocoa-muted); font-style: italic; margin-right: 4px; opacity: 0.85; }
 .ingredient-item.done .ingredient-text {
   text-decoration: line-through;
   text-decoration-color: var(--pink-300);
@@ -2351,6 +2355,7 @@ main { padding-top: var(--s-6); padding-bottom: var(--s-8); }
   }
   .ingredient-text .qty { color: #B23A6D !important; font-weight: 700; }
   .ingredient-text .unit { color: #555 !important; }
+  .ingredient-text .ing-alt { color: #777 !important; font-style: italic; }
   .ing-note {
     font-size: 7.5pt !important;
     color: #666 !important;

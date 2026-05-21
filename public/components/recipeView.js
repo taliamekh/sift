@@ -313,6 +313,13 @@ function renderIngredients(host, ingredients, state) {
       text.appendChild(unitSpan);
       text.appendChild(document.createTextNode(' '));
     }
+    // Alternative-unit measurement (metric/imperial) — e.g. "60g / ¼ cup".
+    // Surfaced inline so cooks who think in the other system don't have to
+    // open the original recipe to find their measurement.
+    if (parts.alt) {
+      text.appendChild(h('span.ing-alt', `/ ${parts.alt}`));
+      text.appendChild(document.createTextNode(' '));
+    }
     text.appendChild(document.createTextNode(name));
 
     if (note) {
@@ -390,6 +397,11 @@ function renderInstructions(host, instructions, state) {
 //     ("(, cut into cubes)") — strip those
 //   - broken-parser data from older saves may leave the name itself
 //     starting with "," or "/" — strip those too
+//   - WP recipe plugins often append footnote references like "Note 1",
+//     "(Note 7)" or "see Note 4" — these are dead-ends without the
+//     footnote text (which lives in the recipe's notes section we don't
+//     surface yet), so we strip them. Real measurements ("12 oz",
+//     "50 - 55g / 2 oz each") are preserved verbatim per user request.
 function splitOffNote(text) {
   if (!text) return { name: '', note: null };
   let s = text.replace(/\s+/g, ' ').trim().replace(/^[,/]\s*/, '');
@@ -423,10 +435,30 @@ function splitOffNote(text) {
     if (balanced && d === 0) noteContent = inner.trim();
   }
 
-  noteContent = noteContent.replace(/^[,\s/]+/, '').trim();
+  noteContent = stripFootnoteRefs(noteContent);
+  noteContent = noteContent.replace(/^[,\s/]+/, '').replace(/[,\s/]+$/, '').trim();
   let prefix = s.slice(0, i).trim().replace(/[,\s]+$/, '');
-  if (!noteContent) return { name: s.trim(), note: null };
+  if (!noteContent) return { name: prefix, note: null };
   return { name: prefix, note: noteContent };
+}
+
+// Strip footnote references in any form the recipe-plugin ecosystem uses:
+//   "Note 1"             → ""
+//   "(Note 1)"           → ""
+//   "see Note 4"         → ""
+//   "Note 3 and Note 5"  → ""
+//   "cake flour OK too, Note 1"  → "cake flour OK too"
+//   "full fat (Note 5)"  → "full fat"
+//   "Note 5, full fat"   → "full fat"
+// Anything else (units, prep instructions, etc.) is left untouched.
+function stripFootnoteRefs(s) {
+  if (!s) return s;
+  // First, drop parenthesised "(Note N)" segments wherever they appear.
+  s = s.replace(/\s*\(\s*(?:see\s+)?notes?\s*\d+(?:\s*(?:and|&|,)\s*\d+)*\s*\)/gi, '');
+  // Then drop bare "Note N" references (with optional connectors).
+  s = s.replace(/(?:^|[,;]\s*|\s)(?:see\s+)?notes?\s*\d+(?:\s*(?:and|&|,)\s*\d+)*(?=$|[,;.\s])/gi, ' ');
+  // Tidy stranded punctuation and double spaces left behind.
+  return s.replace(/\s*[,;]\s*[,;]\s*/g, ', ').replace(/\s+/g, ' ').replace(/^[,;\s]+|[,;\s]+$/g, '').trim();
 }
 
 function escapeText(s) {
