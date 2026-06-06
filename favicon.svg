@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FFB1CC"/>
+      <stop offset="100%" stop-color="#F06292"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="url(#g)"/>
+  <!-- H-1 chef hat — 3-hump wavy curve, scaled into the 64×64 favicon canvas
+       (source path uses 24×24 coords, scaled by 2 and translated by 8). -->
+  <path d="M 18 36 C 16 28 18 18 22 16 C 25 12 28 16 28 22 C 28 16 32 12 36 12 C 40 12 40 16 40 22 C 40 16 43 12 46 16 C 50 18 48 28 46 36 Z" fill="#FFFFFF" fill-opacity="0.95"/>
+  <rect x="18" y="36" width="28" height="7" fill="#FFFFFF"/>
+  <line x1="19" y1="36" x2="45" y2="36" stroke="#F8B4D9" stroke-width="1.2" stroke-linecap="round"/>
+</svg>

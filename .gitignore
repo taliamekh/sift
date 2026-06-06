@@ -1,9 +1,13 @@
-# Student resources gate — do not commit real password
-notes/auth.config.js
-
-# Environment variables
-.env
-.env.local
-
-# Node deps (cheerio for /api/sift-parse — Vercel installs from package.json)
 node_modules/
+data/
+uploads/
+*.log
+.env
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Claude Code local state — keep launch.json for preview reproducibility
+.claude/settings.local.json
+.claude/worktrees/
