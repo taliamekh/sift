@@ -7,6 +7,7 @@ import { openSaveRecipeFlow } from '../components/editors.js';
 import { navigate } from '../lib/router.js';
 import { addRecentlyViewed } from '../lib/recentlyViewed.js';
 import * as toast from '../lib/toast.js';
+import { currentUser } from '../lib/supabase.js';
 
 // View shown after pasting a URL. Renders a loading state, calls /api/parse,
 // then renders RecipeView with a "Save to cookbook" action.
@@ -45,7 +46,16 @@ export async function ParsedRecipeView({ url }) {
 function buildHeaderActions(recipe) {
   const save = h('button.btn.btn-primary');
   save.innerHTML = `${icon('bookmarkFilled')}<span>Save to cookbook</span>`;
-  save.addEventListener('click', () => {
+  save.addEventListener('click', async () => {
+    // Saving requires an account. If the visitor isn't signed in, point them
+    // at /signin with a clear toast — the parsed recipe stays on screen so
+    // they can come back to it.
+    const user = await currentUser();
+    if (!user) {
+      toast.toast('Sign in to save recipes to your cookbook.', { duration: 3000 });
+      navigate('/signin');
+      return;
+    }
     openSaveRecipeFlow({
       recipe,
       onSave: (saved) => navigate(`/saved/${saved.id}`),

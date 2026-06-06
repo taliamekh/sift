@@ -6,6 +6,7 @@ import { openCookbookEditor } from '../components/editors.js';
 import * as toast from '../lib/toast.js';
 import { StarRating } from '../components/starRating.js';
 import { getRecentlyViewed } from '../lib/recentlyViewed.js';
+import { currentUser } from '../lib/supabase.js';
 
 export async function HomeView() {
   const root = h('div.container.stack-7');
@@ -55,13 +56,16 @@ export async function HomeView() {
   hero.appendChild(pasteCard);
   root.appendChild(hero);
 
-  // Cookbooks (the dashed "+ New cookbook" tile in the grid is the only
-  // way to add — no separate button in the section header).
+  // Cookbooks — always show the section so the "+ New cookbook" affordance
+  // is visible. Signed-out visitors see an inline notice strip explaining
+  // they need to sign in to save, and clicking the New cookbook tile routes
+  // them to /signin instead of opening the editor.
+  const user = await currentUser();
   const cookbooksSection = h('section');
   const head = h('div.section-head');
   head.appendChild(h('h2', 'Your Cookbooks'));
   cookbooksSection.appendChild(head);
-
+  if (!user) cookbooksSection.appendChild(SignInNotice());
   const grid = h('div.cookbook-grid');
   cookbooksSection.appendChild(grid);
   root.appendChild(cookbooksSection);
@@ -75,20 +79,31 @@ export async function HomeView() {
   root.appendChild(recentSection);
 
   async function render() {
-    // Render cookbook cards (with a sentinel "+ New cookbook" tile last)
     mount(grid);
-    try {
-      const { cookbooks } = await api.listCookbooks();
-      cookbooks.forEach(cb => grid.appendChild(cookbookCard(cb)));
-      const newTile = h('button.cookbook-card.cookbook-new', { type: 'button' });
-      const inner = h('div.cookbook-new-inner');
-      inner.innerHTML = `${icon('plus')}<span>New cookbook</span>`;
-      newTile.appendChild(inner);
-      newTile.addEventListener('click', () => openCookbookEditor({ onSave: () => render() }));
-      grid.appendChild(newTile);
-    } catch (e) {
-      grid.appendChild(h('p.muted', 'Could not load cookbooks: ' + e.message));
+    // Always render the "+ New cookbook" sentinel tile so signed-out
+    // visitors can see the affordance — clicking it just bounces them to
+    // /signin. Signed-in visitors get the real grid populated above it.
+    if (user) {
+      try {
+        const { cookbooks } = await api.listCookbooks();
+        cookbooks.forEach(cb => grid.appendChild(cookbookCard(cb)));
+      } catch (e) {
+        grid.appendChild(h('p.muted', 'Could not load cookbooks: ' + e.message));
+      }
     }
+    const newTile = h('button.cookbook-card.cookbook-new', { type: 'button' });
+    const inner = h('div.cookbook-new-inner');
+    inner.innerHTML = `${icon('plus')}<span>New cookbook</span>`;
+    newTile.appendChild(inner);
+    newTile.addEventListener('click', () => {
+      if (!user) {
+        toast.toast('Sign in to create a cookbook.', { duration: 3000 });
+        navigate('/signin');
+        return;
+      }
+      openCookbookEditor({ onSave: () => render() });
+    });
+    grid.appendChild(newTile);
 
     // Render recently-viewed recipes from localStorage
     mount(recentGrid);
@@ -106,6 +121,21 @@ export async function HomeView() {
 
   await render();
   return root;
+}
+
+function SignInNotice() {
+  // Thin notice strip above the cookbook grid for signed-out visitors,
+  // explaining why a "+ New cookbook" tile is visible but won't actually
+  // save anything until they sign in.
+  const notice = h('div.signin-notice', { role: 'note' });
+  const lockGlyph = h('span.signin-notice-glyph', { 'aria-hidden': 'true' });
+  lockGlyph.innerHTML = icon('bookmark');
+  notice.appendChild(lockGlyph);
+  const text = h('p.signin-notice-text', 'Sign in to save your cookbooks.');
+  notice.appendChild(text);
+  const cta = h('a.btn.btn-soft.signin-notice-cta', { href: '#/signin' }, 'Sign in');
+  notice.appendChild(cta);
+  return notice;
 }
 
 function cookbookCard(cb) {

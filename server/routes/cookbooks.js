@@ -8,7 +8,7 @@ import db from '../db.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const UPLOAD_DIR = resolve(__dirname, '..', '..', 'uploads');
-const PRESET_DIR = resolve(__dirname, '..', '..', 'public', 'assets', 'covers');
+const PRESET_DIR = resolve(__dirname, '..', '..', 'assets', 'covers');
 mkdirSync(UPLOAD_DIR, { recursive: true });
 mkdirSync(PRESET_DIR, { recursive: true });
 
@@ -157,7 +157,7 @@ router.post('/cookbooks/:id/cover-image', coverUpload.single('cover'), (req, res
   res.status(201).json({ cookbook: cookbookRow(row), url });
 });
 
-// List the files currently sitting in public/assets/covers/ — these are the
+// List the files currently sitting in assets/covers/ — these are the
 // preset cover options that show in the editor. Drop any image into that
 // folder and it appears as a selectable preset.
 router.get('/cover-presets', (_req, res) => {

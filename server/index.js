@@ -36,15 +36,17 @@ app.use('/uploads', express.static(resolve(ROOT, 'uploads'), {
   fallthrough: false,
 }));
 
-// Frontend (everything else)
-app.use(express.static(resolve(ROOT, 'public'), {
+// Frontend (everything else) — lives at the repo root so this same
+// directory works both as the local Express-served app and as the
+// subtree the website pulls into mekh.ca/sift.
+app.use(express.static(ROOT, {
   index: 'index.html',
   extensions: ['html'],
 }));
 
 // SPA: anything that isn't an API/uploads call falls through to index.html
 app.get(/^(?!\/(api|uploads)).+/, (req, res) => {
-  res.sendFile(resolve(ROOT, 'public', 'index.html'));
+  res.sendFile(resolve(ROOT, 'index.html'));
 });
 
 app.use((err, req, res, _next) => {
