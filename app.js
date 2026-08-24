@@ -15,13 +15,6 @@ import { SavedRecipeView } from './views/savedRecipe.js';
 const brandMark = $('.brand-mark');
 if (brandMark) brandMark.innerHTML = icon('chefHat');
 
-// "← Portfolio" only makes sense when sift is hosted at mekh.ca/sift/. When
-// someone clones this repo and runs it locally (or hosts it elsewhere), the
-// link goes nowhere — remove it. The subtree on the website keeps it visible
-// because the URL path starts with /sift/ there.
-const navBack = $('.nav-back');
-if (navBack && !window.location.pathname.startsWith('/sift/')) navBack.remove();
-
 const app = $('#app');
 
 async function renderView(factory) {
